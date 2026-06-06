@@ -941,7 +941,6 @@ add_test('transpiler_122', function()
     return strfind(code, 'function minmax%(a, b, c%)')
        and strfind(code, 'return mn, mx')
        and strfind(code, 'local a, b = minmax%(')
-       -- select(2, explicit args) -> inline: 30, 5 so yea...
        and strfind(code, '30, 5')
 end)
 

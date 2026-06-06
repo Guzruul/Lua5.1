@@ -227,7 +227,7 @@ local function L51X(src)
     code = core.TPIL(ast)
     ASRT(code, 'L51X: TPIL returned nil')
     local tr_end = GetTime()
-    DEBG(1, 'TPIL passed, processing...') -- this is a string
+    DEBG(1, 'TPIL passed, processing...')
     DEBG(3, strformat('L51X: Transpile: %.3f ms', (tr_end - tr_start) * 1000))
 
     if not RUN_LOADER then return end
