@@ -165,6 +165,7 @@ local render_statement
 local render_expression
 local needs_mod = false
 local needs_len = false
+local needs_match = false
 
 local MAX_VARARG = 20 -- we keep this at 20 for now, quie generous
 
@@ -468,6 +469,19 @@ function render_expression(node, context)
         if func_name == 'select' then
             local expected = context.expected_returns
             return expand_select(node, expected)
+        elseif func_name == 'print' then
+            local args = {}
+            for _, arg in ipairs(node.args or {}) do
+                tinsert(args, 'tostring(' .. render_expression(arg, context) .. ')')
+            end
+            return 'DEFAULT_CHAT_FRAME:AddMessage(' .. concat(args, ' .. "  " .. ') .. ')'
+        elseif func_name == 'match' then
+            needs_match = true
+            local args = {}
+            for _, arg in ipairs(node.args or {}) do
+                tinsert(args, render_expression(arg, context))
+            end
+            return '__lua51_match(' .. concat(args, ', ') .. ')'
         end
 
         local func = render_expression(node.func, context)
@@ -730,6 +744,7 @@ function core.TPIL(ast)
 
     needs_len = false
     needs_mod = false
+    needs_match = false
 
     local parts = {}
     -- top‑level chunk is treated as an implicit vararg function -> like wotlk -- v1
@@ -748,6 +763,9 @@ function core.TPIL(ast)
     end
     if needs_mod then
         tinsert(helpers, 'local function __lua51_mod(a, b)\n  return a - math.floor(a / b) * b\nend')
+    end
+    if needs_match then
+        tinsert(helpers, 'local function __lua51_match(s, pattern, init)\n  local results = {string.find(s, pattern, init)}\n  if not results[1] then return nil end\n  if table.getn(results) > 2 then\n    return unpack(results, 3)\n  else\n    return string.sub(s, results[1], results[2])\n  end\nend')
     end
     if getn(helpers) > 0 then
         code = concat(helpers, '\n\n') .. '\n\n' .. code

@@ -20,16 +20,20 @@ And enjoy the private namespace!* :)
 - It translates `Lua5.1` syntax down to Lua 5.0
 - It emulates the WotlK private namespace system for every addon/file
 
-MAIN `Lua5.1` Function:
+Main `Lua5.1` Function:
 - `___Lua51([[ < your Lua5.1 code > ]])` - returns up to 2 optional arguments of your choice.
 
-NEW `Lua5.1` Operators for WoW Vanilla:
+New `Lua5.1` Operators for WoW Vanilla:
 - `#`
 - `%`
 - `...`  - NOW fully usable as expression! `local a1,a2,a3 = ...`
 
-NEW `Lua5.1` Functions for WoW Vanilla:
-- 'select()'
+New `Lua5.1` Functions for WoW Vanilla:
+
+- `select`(n: number, ...: any)  -> returns values from index n onward
+- `match`(s: string, pattern: string, init?: number) -> returns matched string or captures, or nil
+- `print`(...: any)  -> prints to DEFAULT_CHAT_FRAME:AddMessage
+
 
 ## Lua 5.1 Code Syntax
 
