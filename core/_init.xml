@@ -1,0 +1,7 @@
+<Ui>
+<Script file="core.lua"/>
+<Script file="tokenizer.lua"/>
+<Script file="parser.lua"/>
+<Script file="transpiler.lua"/>
+<Script file="diagnostics.lua"/>
+</Ui>
