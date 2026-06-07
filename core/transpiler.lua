@@ -82,16 +82,16 @@ local function render_parameters(params)
     return concat(names, ', ')
 end
 
-local function render_field(field)
+local function render_field(field, context)
     if not field or type(field) ~= 'table' or not field.kind then
         error('invalid table field node at line ' .. tostring(field.line))
     end
     if field.kind == 'key' then
-        return '[' .. render_expression(field.key) .. '] = ' .. render_expression(field.value)
+        return '[' .. render_expression(field.key, context) .. '] = ' .. render_expression(field.value, context)
     elseif field.kind == 'keyvalue' then
-        return render_expression(field.key) .. ' = ' .. render_expression(field.value)
+        return render_expression(field.key, context) .. ' = ' .. render_expression(field.value, context)
     elseif field.kind == 'value' then
-        return render_expression(field.value)
+        return render_expression(field.value, context)
     end
     error('unsupported field kind: ' .. tostring(field.kind) .. ' at line ' .. tostring(field.line))
 end
@@ -305,7 +305,7 @@ function render_expression(node, context)
             end
             return concat(items, ', ')
         end
-        return 'arg'
+        return 'unpack(arg)'
     elseif node.type == 'Var' then
         local text = render_expression(node.base, context)
         if node.indexer then
@@ -323,12 +323,28 @@ function render_expression(node, context)
         if func_name == 'select' then
             local expected = context.expected_returns
             return expand_select(node, expected)
-        elseif func_name == 'print' then
-            local args = {}
-            for _, arg in ipairs(node.args or {}) do
+        -- elseif func_name == 'print' then -- v1
+        --     local args = {}
+        --     for _, arg in ipairs(node.args or {}) do
+        --         tinsert(args, 'tostring(' .. render_expression(arg, context) .. ')')
+        --     end
+        --     return 'DEFAULT_CHAT_FRAME:AddMessage(' .. concat(args, ' .. "  " .. ') .. ')'
+    elseif func_name == 'print' then -- v2 uses tostring on all '...' args, v1 wouldnt
+        local args = {}
+        for _, arg in ipairs(node.args or {}) do
+            if arg.type == 'VarArg' then
+                -- Expand each vararg value individually, separated by "  "
+                for i = 1, MAX_VARARG do
+                    tinsert(args, 'tostring(arg[' .. i .. '])')
+                end
+            else
                 tinsert(args, 'tostring(' .. render_expression(arg, context) .. ')')
             end
-            return 'DEFAULT_CHAT_FRAME:AddMessage(' .. concat(args, ' .. "  " .. ') .. ')'
+        end
+        return 'DEFAULT_CHAT_FRAME:AddMessage(' .. concat(args, ' .. "  " .. ') .. ')'
+
+
+
         elseif func_name == 'match' then
             needs_match = true
             local args = {}
@@ -385,7 +401,7 @@ function render_expression(node, context)
         end
         local fields = {}
         for _, field in ipairs(node.fields or {}) do
-            tinsert(fields, render_field(field))
+            tinsert(fields, render_field(field, context))
         end
         return '{' .. concat(fields, ', ') .. '}'
     elseif node.type == 'FunctionExpression' then

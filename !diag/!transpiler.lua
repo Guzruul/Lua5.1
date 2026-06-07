@@ -474,7 +474,9 @@ add_test('transpiler_68', function()
     local tokens = core.TOKN('print(...)')
     local ast = core.PARS(tokens)
     local code = core.TPIL(ast)
-    return strfind(code, 'DEFAULT_CHAT_FRAME:AddMessage(tostring(arg))', 1, true)
+    return string.find(code, 'tostring(arg[1])', 1, true) ~= nil
+       and string.find(code, 'tostring(arg[20])', 1, true) ~= nil
+       and not string.find(code, 'unpack(arg)')
 end)
 
 add_test('transpiler_69', function()
@@ -1005,4 +1007,41 @@ add_test('transpiler_131', function()
     local ast = core.PARS(tokens)
     local code = core.TPIL(ast)
     return strfind(code, '__lua51_match("hello", "world")', 1, true)
+end)
+
+add_test('transpiler_132', function()
+    local tokens = core.TOKN('while true do if true then break end end')
+    local ast = core.PARS(tokens)
+    local code = core.TPIL(ast)
+    local func, _ = loadstring(code)
+    return func ~= nil
+end)
+
+add_test('transpiler_133', function()
+    local tokens = core.TOKN('repeat if true then break end print("x") until true')
+    local ast = core.PARS(tokens)
+    local code = core.TPIL(ast)
+    local func, _ = loadstring(code)
+    return func ~= nil
+end)
+
+add_test('transpiler_134', function()
+    local tokens = core.TOKN('myFunc(...)')
+    local ast = core.PARS(tokens)
+    local code = core.TPIL(ast)
+    return string.find(code, 'myFunc%(unpack%(arg%)%)') ~= nil
+end)
+
+add_test('transpiler_135', function()
+    local tokens = core.TOKN('return ...')
+    local ast = core.PARS(tokens)
+    local code = core.TPIL(ast)
+    return string.find(code, 'return unpack%(arg%)') ~= nil
+end)
+
+add_test('transpiler_136', function()
+    local tokens = core.TOKN('local t = {1, 2, ...}')
+    local ast = core.PARS(tokens)
+    local code = core.TPIL(ast)
+    return string.find(code, '{1, 2, unpack%(arg%)}') ~= nil
 end)

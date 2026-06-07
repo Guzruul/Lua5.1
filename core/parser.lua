@@ -629,9 +629,13 @@ local function parse_statement(s, can_break)
         if tok2 and (tok2.type == 'lparen' or tok2.type == 'lbrace' or tok2.type == 'string' or tok2.type == 'colon') then
             local call_node = first_var
             while true do
-                local next = parse_infix(s, call_node, 0)
-                if next == call_node then break end
-                call_node = next
+                local nxt = peek(s)
+                if not nxt or is_binop(nxt.type) or (nxt.type == 'keyword' and (nxt.value == 'and' or nxt.value == 'or')) then
+                    break
+                end
+                local next_node = parse_infix(s, call_node, 0)
+                if next_node == call_node then break end
+                call_node = next_node
             end
             return { type = 'FunctionCall', call = call_node, line = tok.line, col = tok.column }
         end

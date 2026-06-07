@@ -215,7 +215,51 @@
          if c1 ~= nil then return c1..c5 else return string.sub(s, _, e) end
        supports up to 5 captures per pattern, avoids unpack entirely.
 
-       context: never use unpack(n, offset) in WoW Vanilla — its is broken.
-       always expand multi-return explicitly via direct variable assignments
+        context: never use unpack(n, offset) in WoW Vanilla — its is broken.
+        always expand multi-return explicitly via direct variable assignments
+     ============================================================================
+]
+
+[[ improvements v6 ] =======================================================
+    ============================================================================
+    1. context leak fix in table constructor fields
+       render_field() did not accept or forward the context parameter, so
+       transpiling a table constructor containing vararg inside a vararg
+       function (e.g. local t = {1, 2, ...}) lost the in_vararg flag.
+       this caused a transpile-time crash:
+         "'...' used outside a vararg function – cannot transpile"
+       fix: render_field now takes (field, context) and forwards context
+       to all inner render_expression() calls for key, keyvalue, and value
+       field kinds. the TableConstructor branch in render_expression also
+       now passes context to render_field.
+
+    2. vararg expression expansion via unpack(arg)
+       previously, any use of '...' as an expression (outside of assignment
+      multi-return expansion) emitted bare 'arg', passing the whole arg
+       table as a single value instead of expanding it into individual args.
+       this affected:
+         - function calls:  myFunc(...)     -> myFunc(arg)  (wrong)
+         - return:          return ...      -> return arg    (wrong)
+         - table ctor:      {1, 2, ...}     -> {1, 2, arg}   (wrong)
+       fix: vararg expression fallback changed from 'return "arg"' to
+       'return "unpack(arg)"'. plain unpack(arg) without offset works
+       correctly in WoW Vanilla — it expands the arg table into individual
+       values. the broken behavior is unpack(arg, n) with an offset, which
+       is not used here.
+       corrected output:
+         myFunc(...)     -> myFunc(unpack(arg))
+         return ...      -> return unpack(arg)
+         {1, 2, ...}     -> {1, 2, unpack(arg)}
+
+    3. print vararg parameter handling with tostring
+       previously, print(...) with varargs only displayed the first vararg value,
+       because the print handler wrapped each argument in tostring(), and a VarArg
+       node produced unpack(arg) — tostring() consumes only the first return of
+       unpack. this caused print(...) to behave like print( (first vararg) ).
+       fix: when the print handler encounters a VarArg node, it expands it into
+       individual tostring(arg[1]), tostring(arg[2]), ..., tostring(arg[20])
+       joined by the same separator ("  ") as other arguments. this ensures all
+       vararg values appear in the printed message, matching Lua 5.1 multi‑arg
+       print behaviour.
     ============================================================================
 ]

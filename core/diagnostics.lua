@@ -8,6 +8,7 @@ local tgetn = table.getn
 local strfind = string.find
 local tinsert = table.insert
 
+-- current progress: 258/258 : stable ( 6.6.2026 )
 local tests = {}
 
 local function add_test(name, fn)
@@ -47,4 +48,12 @@ end
 
 SELFTEST()
 
--- current progress: 253/253 : stable ( 6.6.2026 )
+
+add_test('transpiler_68', function()
+    local tokens = core.TOKN('print(...)')
+    local ast = core.PARS(tokens)
+    local code = core.TPIL(ast)
+    return string.find(code, 'tostring(arg[1])', 1, true) ~= nil
+       and string.find(code, 'tostring(arg[20])', 1, true) ~= nil
+       and not string.find(code, 'unpack(arg)')
+end)
