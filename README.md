@@ -49,9 +49,9 @@ Example 1
 Example 2
 
     ___Lua51([[
-        local addonname, namespace = ... -- provides name, and private table like Wotlk
-        print(addonname)                 -- will print your addon name
-        print(namesp)                    -- will print out private table's mem adress
+        local addonname, namespace = ...                -- provides name, and private table like Wotlk
+        print(addonname)                                -- will print your addon name
+        print(namesp)                                   -- will print out private table's mem adress
     ]])
 
 Example 3
@@ -86,33 +86,55 @@ Example 4
 Example 1:
 
     local addon, ns = ___Lua51([[ local a, b = ... ; return a, b ]])
-    print(addon)
-    print(ns)
+    print(addon)                                    -- your addon name
+    print(tostring(ns))                             -- your private table
 
 Example 2:
 
-    local calculate = ___Lua51([[ return 10 % 3 ]]) -- returns up to 2 args from the pipeline
-    print(calculate)                                -- will print out 1 from the transpiled code
+    local _L = ___Lua51                             -- short-cut
+    local calculate = _L([[ return 10 % 3 ]])       -- returns up to 2 args from the pipeline
+    print(calculate)                                -- will print out 1
 
 ## Lua 5.0 / 5.1 Interop
 
 You can easily switch between Lua5.1 and Lua5.0 directly in the file:
 
-    local x = 1                        -- do some stuff in Lua 5.0 (regular env)
+    local x = 1                                     -- do some stuff in Lua 5.0 (regular env)
 
-    ___Lua51([[                        -- switch to Lua 5.1 env and do some stuff...
+    ___Lua51([[                                     -- switch to Lua 5.1 env and do some stuff...
 
         < some lua 5.1 code >
 
     ]])
 
-    print(x)                           -- back to Lua 5.0
+    print(x)                                        -- back to Lua 5.0
 
-    local Y = ___Lua51([[ return 10]]) -- quick accesss into Lua 5.1, extract...
+    local Y = ___Lua51([[ return 10]])              -- quick accesss into Lua 5.1, extract...
 
-    print(Y)                           -- and back into Lua5.0
+    print(Y)                                        -- and back into Lua5.0
 
     ... and so on.
+
+Example:
+
+    local _, core = ___Lua51([[ local addon,core =...;return addon,core ]])
+
+    -- do some stuff in lua 5.0
+    core.sometable = {}
+
+    -- then define a func that uses select or other stuff from Lua 5.1
+    ___Lua51([[
+        local addon, core = ...
+
+        function core.complexFunc()
+            local a, b = select(1, 'x', 'y', 'z')
+            return a, b
+        end
+    ]])
+
+    -- now the func is defined and can be used in lua 5.0
+    local a, b = core.complexFunc()
+    print(a .. ', ' .. b)
 
 ## New Command Line
 
@@ -121,8 +143,8 @@ You can easily switch between Lua5.1 and Lua5.0 directly in the file:
 
 ## Other Slash commands
 
-    /lua51 diag <module?>              -- runs the diagnostic system
-    /lua51 lvl <0-3>                   -- sets the current debug level
+    /lua51 diag <module?>                           -- runs the diagnostic system
+    /lua51 lvl <0-3>                                -- sets the current debug level
 
 ## WotlK Namespace System
 
@@ -149,12 +171,12 @@ Return:
 However, each `___Lua51()` call has its own local scope.
 
     ___Lua51([[ local var = 1 ]])
-    ___Lua51([[ new = var + 1 ]])   -- nil here
+    ___Lua51([[ new = var + 1 ]])                   -- nil here
 
 Or:
 
     ___Lua51([[ local var = 1 ]])
-    print(var)                      -- nil here too
+    print(var)                                      -- nil here too
 
 Do not work. Keep that in mind.
 
@@ -193,8 +215,8 @@ Whole pipeline getting blasted @60FPS, no memory leaks.
 - Report with proper logs please and how to reproduce.
 
 ## Installation
-- Put the folder `Lua5.1` anywhere in your addon
-- Add the `_init.xml` to your `.toc` or `.xml` entry point
+- Put the folder `Lua5.1` folder anywhere in your addon
+- Add the `Lua5.1\core\_init.xml` to your `.toc` or `.xml` file
 
 ## Last Note
 
