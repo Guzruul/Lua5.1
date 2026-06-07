@@ -15,18 +15,18 @@ And enjoy the private namespace! :)
 - It translates `Lua5.1` syntax down to `Lua 5.0`
 - It emulates the WotlK private namespace system for every addon/file
 
-## Lua5.1 Function
+## Function
 
 - `___Lua51([[ < your Lua5.1 code > ]])` - returns up to 2 optional arguments of your choice.
 
-## Lua5.1 Operators for WoW Vanilla
+## Operators for WoW Vanilla
 - `#`   - lenght operator
 - `%`   - modulo operator
 - `...` - vararg operator - NOW usable as expression!
 
         local a1,a2,a3 = ...
 
-## Lua5.1 Functions for WoW Vanilla
+## Functions for WoW Vanilla
 
 - `select`(n: number, ...: any)  - returns values from index n onward
 
@@ -115,12 +115,12 @@ You can easily switch between Lua5.1 and Lua5.0 directly in the file:
 
     ... and so on.
 
-## Lua 5.1 New Command Line
+## New Command Line
 
     /lua51 run print(10 % 3)
     /l51 run <some lua 5.1 code>
 
-## Lua5.1 Other Slash commands
+## Other Slash commands
 
     /lua51 diag <module?>              -- runs the diagnostic system
     /lua51 lvl <0-3>                   -- sets the current debug level
