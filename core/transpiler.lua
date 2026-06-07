@@ -1,4 +1,4 @@
---[[ improvements  v1 ] =======================================================
+--[[ improvements v1 ] =======================================================
     ============================================================================
     1. the '...' token can only appear in a function parameter list or at the
        top level of a chunk (as in wow addon loading). top‑level '...' is
@@ -142,6 +142,24 @@
        just the first one. done for now... more transpiler work soonTM.
     ============================================================================
 ]]
+--[[ improvements v5 ] =======================================================
+    ============================================================================
+    1. gmatch() implementation (string.gmatch emulation)
+       added __lua51_gmatch helper injected alongside len/mod/match.
+       first version used unpack(results, 3) to return captures — same broken
+       unpack() behaviour as seen in expand_select: WoW 1.12.1 unpack ignores
+       the offset and starts from index 1, returning string.find positions
+       instead of actual capture values.
+
+       so: replaced table + broken-unpack with explicit local variables:
+         local _, e, c1, c2, c3, c4, c5 = string.find(...)
+         if c1 ~= nil then return c1..c5 else return string.sub(s, _, e) end
+       supports up to 5 captures per pattern, avoids unpack entirely.
+
+       context: never use unpack(n, offset) in WoW Vanilla — its is broken.
+       always expand multi-return explicitly via direct variable assignments
+    ============================================================================
+]]
 
 -- WORK IN PROGRESS - this is a warzone in here so be careful
 
@@ -166,6 +184,7 @@ local render_expression
 local needs_mod = false
 local needs_len = false
 local needs_match = false
+local needs_gmatch = false
 
 local MAX_VARARG = 20 -- we keep this at 20 for now, quie generous
 
@@ -482,6 +501,13 @@ function render_expression(node, context)
                 tinsert(args, render_expression(arg, context))
             end
             return '__lua51_match(' .. concat(args, ', ') .. ')'
+        elseif func_name == 'gmatch' then
+            needs_gmatch = true
+            local args = {}
+            for _, arg in ipairs(node.args or {}) do
+                tinsert(args, render_expression(arg, context))
+            end
+            return '__lua51_gmatch(' .. concat(args, ', ') .. ')'
         end
 
         local func = render_expression(node.func, context)
@@ -745,6 +771,7 @@ function core.TPIL(ast)
     needs_len = false
     needs_mod = false
     needs_match = false
+    needs_gmatch = false
 
     local parts = {}
     -- top‑level chunk is treated as an implicit vararg function -> like wotlk -- v1
@@ -766,6 +793,9 @@ function core.TPIL(ast)
     end
     if needs_match then
         tinsert(helpers, 'local function __lua51_match(s, pattern, init)\n  local results = {string.find(s, pattern, init)}\n  if not results[1] then return nil end\n  if table.getn(results) > 2 then\n    return unpack(results, 3)\n  else\n    return string.sub(s, results[1], results[2])\n  end\nend')
+    end
+    if needs_gmatch then
+        tinsert(helpers, 'local function __lua51_gmatch(s, pattern)\n  local pos = 1\n  return function()\n    local _, e, c1, c2, c3, c4, c5 = string.find(s, pattern, pos)\n    if not _ then return nil end\n    pos = e + 1\n    if c1 ~= nil then\n      return c1, c2, c3, c4, c5\n    else\n      return string.sub(s, _, e)\n    end\n  end\nend')
     end
     if getn(helpers) > 0 then
         code = concat(helpers, '\n\n') .. '\n\n' .. code

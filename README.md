@@ -21,18 +21,22 @@ Main `Lua5.1` Function:
 
 - `___Lua51([[ < your Lua5.1 code > ]])` - returns up to 2 optional arguments of your choice.
 
-New `Lua5.1` Operators for WoW Vanilla:
+`Lua5.1` Operators for WoW Vanilla:
 - `#`
 - `%`
 - `...`  - NOW fully usable as expression! `local a1,a2,a3 = ...`
 
-New `Lua5.1` Functions for WoW Vanilla:
+`Lua5.1` Functions for WoW Vanilla:
 
 - `select`(n: number, ...: any)  -> returns values from index n onward
 
 - `match`(s: string, pattern: string, init?: number) -> returns matched string or captures, or nil
 
-- `print`(...: any)  -> prints to DEFAULT_CHAT_FRAME:AddMessage
+- `gmatch`(s: string, pattern: string) -> returns an iterator function yielding all matches or captures from pattern over string s
+
+- `print`(...: any)  -> prints to DEFAULT_CHAT_FRAME | multi-arguments seperated by commas
+
+        print(a, b, c) → "a  b  c"
 
 
 ## Lua 5.1 Code Syntax
