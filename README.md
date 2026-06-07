@@ -6,42 +6,42 @@ If you are a beginner dev, don' rely to much on this since you wont be able to d
 Use only small functions or small code blocks inside `Lua51`. Keep things isolated.
 And enjoy the private namespace! :)
 
-    Be carefull during Alpha phase please.
-
 - 100% Lua
 - 100% stand-alone
+- Alpha Phase
 
 ## Features
 
 - It translates `Lua5.1` syntax down to `Lua 5.0`
-
 - It emulates the WotlK private namespace system for every addon/file
 
-Main `Lua5.1` Function:
+## Lua5.1 Function
 
 - `___Lua51([[ < your Lua5.1 code > ]])` - returns up to 2 optional arguments of your choice.
 
-`Lua5.1` Operators for WoW Vanilla:
-- `#`
-- `%`
-- `...`  - NOW fully usable as expression! `local a1,a2,a3 = ...`
+## Lua5.1 Operators for WoW Vanilla
+- `#`   - lenght operator
+- `%`   - modulo operator
+- `...` - vararg operator - NOW usable as expression!
 
-`Lua5.1` Functions for WoW Vanilla:
+        local a1,a2,a3 = ...
 
-- `select`(n: number, ...: any)  -> returns values from index n onward
+## Lua5.1 Functions for WoW Vanilla
 
-- `match`(s: string, pattern: string, init?: number) -> returns matched string or captures, or nil
+- `select`(n: number, ...: any)  - returns values from index n onward
 
-- `gmatch`(s: string, pattern: string) -> returns an iterator function yielding all matches or captures from pattern over string s
+- `match`(s: string, pattern: string, init?: number) - returns matched string or captures, or nil
 
-- `print`(...: any)  -> prints to DEFAULT_CHAT_FRAME | multi-arguments seperated by commas
+- `gmatch`(s: string, pattern: string) - returns an iterator function yielding all matches or captures from pattern over string s
+
+- `print`(...: any)  - prints to DEFAULT_CHAT_FRAME | multi-arguments seperated by commas
 
         print(a, b, c) → "a  b  c"
 
 
 ## Lua 5.1 Code Syntax
 
-### Lua 5.1 Inline
+### Lua 5.1 Inline Usage
 
 Example 1
 
@@ -82,10 +82,18 @@ Example 4
         local a, b = minmax(select(2, 'x', 10, 30, 5)) --  will be a = 5 and b = 30
     ]])
 
-### Lua 5.1 Extract
+### Lua 5.1 Return Usage
+
+Example 1:
+
+    local addon, ns = ___Lua51([[ local a, b = ... ; return a, b ]])
+    print(addon)
+    print(ns)
+
+Example 2:
 
     local calculate = ___Lua51([[ return 10 % 3 ]]) -- returns up to 2 args from the pipeline
-    print(calculate)                   -- will print out 1 from the transpiled code
+    print(calculate)                                -- will print out 1 from the transpiled code
 
 ### Enviroment Switch
 
@@ -107,17 +115,17 @@ You can easily switch between Lua5.1 and Lua5.0 directly in the file:
 
     ... and so on.
 
-### Lua 5.1 NEW Command Line
+## Lua 5.1 New Command Line
 
     /lua51 run print(10 % 3)
     /l51 run <some lua 5.1 code>
 
-### Lua5.1 Other Slash commands
+## Lua5.1 Other Slash commands
 
     /lua51 diag <module?>              -- runs the diagnostic system
     /lua51 lvl <0-3>                   -- sets the current debug level
 
-### WotlK Namespace System
+## WotlK Namespace System
 
 - `___Lua51` provides each caller with addonname + namespace, no registry needed, any caller gets it
 
@@ -129,13 +137,31 @@ Inline:
         print(ns)
     ]])
 
-Extracted from Lua5.1 to Lua5.0:
+Return:
 
     local addon, ns = ___Lua51([[ local addon, ns = ... ; return addon, ns ]])
     print(addon)
     print(ns)
 
-## More 'select()' Code Examples
+## Scope
+
+`___Lua51()` body executes in WoW's global environment.
+
+However, each `___Lua51()` call has its own scope. Therefore:
+
+    ___Lua51([[ local var = 1 ]])
+    ___Lua51([[ new = var + 1 ]])   -- nil here
+
+Or:
+
+    ___Lua51([[ local var = 1 ]])
+    print(var)                      -- nil here too
+
+Do not work. Keep that in mind.
+
+You either return values, or add them to a shared table if you want to use them outside the scope.
+
+## Some 'select()' Code Examples
 
 | Command | Output | Description |
 |---|---|---|
@@ -150,21 +176,15 @@ Extracted from Lua5.1 to Lua5.0:
 | `/lua51 run local a, b, c = select(1, 'x', 'y', 'z'); print(a .. ', ' .. b .. ', ' .. c)` | `x, y, z` | Multi-return all |
 | `/lua51 run print(select(1+1, 10, 20, 30))` | `20` | Dynamic expression index |
 
-
-## Installation
-- Put the folder `Lua5.1` anywhere in your addon
-- Add the `_init.xml` to your `.toc` or `.xml` entry point
-- Use `___Lua51([[ < your code in here > ]])` to enter transpiler environment
-
 ## Known Limitations
-> C-engine functions cant be reproduced in Lua, stuff like `collectgarbage('count')` etc.
+- C-engine functions cant be reproduced in Lua, stuff like `collectgarbage('count')` etc.
 
 ## Performance
-> Pretty good honestly, even in tight OnUpdate loops, the pipeline runs stable.
+Pretty good honestly, even in tight OnUpdate loops, the pipeline runs stable.
 
-    CreateFrame'Frame':SetScript('OnUpdate', function() ___Lua51([[  local a, b, c = select(1, 'x', 'y', 'z'); print(a .. ', ' .. b .. ', ' .. c)  ]]) end)
+        CreateFrame'Frame':SetScript('OnUpdate', function() ___Lua51([[  local a, b, c = select(1, 'x', 'y', 'z'); print(a .. ', ' .. b .. ', ' .. c)  ]]) end)
 
-> Full pipeline getting blasted @60FPS, no memory leaks. DONT do this tho, cache or inline!
+Whole pipeline getting blasted @60FPS, no memory leaks.
 
 ## Issues
 - The addon is still in developement.
@@ -173,10 +193,11 @@ Extracted from Lua5.1 to Lua5.0:
 - Please report them all on the Github, to make the transpiler stable.
 - Report with proper logs please and how to reproduce.
 
-## Github
-Source: https://github.com/Guzruul/Lua5.1
+## Installation
+- Put the folder `Lua5.1` anywhere in your addon
+- Add the `_init.xml` to your `.toc` or `.xml` entry point
 
-# Author' Note
+## Last Note
 
 If you want to know why... I like compiler engineering and low level stuff.
 

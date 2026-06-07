@@ -11,7 +11,7 @@ Lua5.1: Transpiler framework WoW Vanilla
 Github: https://github.com/Guzruul/Lua5.1
 
 This is the official source.
-Please don't fork it. I try to avoid version chaos and confusion (Ace...),
+Please don't fork it.
 If you want to contribute, please open a ticket or send a PR on Github instead.
 
 Thank you, Guzruul.
