@@ -2,12 +2,8 @@
 
 **`Lua5.1` is a stand-alone runtime mini-transpiler and service layer for World of Warcraft Vanilla 1.12.1 that tries to emulate `Lua5.1` and Blizzard's private table system introduced in Wotlk 3.0.**
 
-If you are a beginner dev, don't rely to much on this since you wont be able to debug.
-Use only small functions or small code blocks inside `___Lua51()`. Keep things isolated.
-
-- 100% Lua
-- 100% stand-alone
-- Alpha Phase
+- Fully written in Lua. No external tools needed.
+- AST transpiler - no cheap regex hack
 
 ## Features
 
@@ -201,28 +197,47 @@ You either return values, or add them to a shared table if you want to use them 
 - C-engine functions cant be reproduced in Lua, stuff like `collectgarbage('count')` etc.
 
 ## Performance
-Pretty good honestly, even in tight OnUpdate loops, the pipeline runs stable.
+Pretty good honestly.
 
-        CreateFrame'Frame':SetScript('OnUpdate', function() ___Lua51([[  local a, b, c = select(1, 'x', 'y', 'z'); print(a .. ', ' .. b .. ', ' .. c)  ]]) end)
+253 testcases passed.
+Has transpiled a full production file.
+Can be called inside 'OnUpdate' scripts without throttle.
 
-Whole pipeline getting blasted @60FPS, no memory leaks.
+## Error Messages
+
+`___Lua51()` reports errors with the exact line and column from your source code.
+Note: This is not your file's line number! It is the line number inside the function call. Keep that in mind.
+
+Parser errors:
+
+    ___Lua51([[ local x = s #"hello" ]])            -- invalid syntax
+
+>Message: Parser: line 1 col 14: unexpected symbol '#'
+
+
+Transpiler errors:
+
+    ___Lua51([[
+    local f = function()
+        return ...
+    end
+    ]])
+
+>Message: '...' used outside a vararg function – cannot transpile at line 3
 
 ## Issues
-- The addon is still in developement.
-- Error messages might end up obscure due to transpiling
-- Due to the complexity of this addon, bugs can and will occur initially.
-- Please report them all on the Github, to make the transpiler stable.
-- Report with proper logs please and how to reproduce.
+- Due to the complexity of this addon, bugs may occur initially
+- Please report properly on Github to make the transpiler stable
 
 ## Installation
-- Put the folder `Lua5.1` folder anywhere in your addon
-- Add the `Lua5.1\core\_init.xml` to your `.toc` or `.xml` file
+- Place the `Lua5.1` folder anywhere in your addon
+- Load the `Lua5.1\core\_init.xml` file via your `.toc` or `.xml` entry point
 
 ## Last Note
 
 If you want to know why... I like compiler engineering and low level stuff.
 
-If you enjoy the framework and want to support me:
+And if you enjoy the framework and want to support me:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/guzruul)
 
@@ -231,4 +246,4 @@ If you enjoy the framework and want to support me:
 
 Take care turtles, Guzruul.
 
-Aπό τι είναι φτιαγμένη η φαντασία...?
+... Aπό τι είναι φτιαγμένη η φαντασία...?

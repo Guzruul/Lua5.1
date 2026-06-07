@@ -65,7 +65,7 @@ local function render_name(node)
         end
         return base
     end
-    error('invalid function name node type: ' .. tostring(node.type))
+    error('invalid function name node type: ' .. tostring(node.type) .. ' at line ' .. tostring(node.line))
 end
 
 local function render_parameters(params)
@@ -84,7 +84,7 @@ end
 
 local function render_field(field)
     if not field or type(field) ~= 'table' or not field.kind then
-        error('invalid table field node')
+        error('invalid table field node at line ' .. tostring(field.line))
     end
     if field.kind == 'key' then
         return '[' .. render_expression(field.key) .. '] = ' .. render_expression(field.value)
@@ -93,7 +93,7 @@ local function render_field(field)
     elseif field.kind == 'value' then
         return render_expression(field.value)
     end
-    error('unsupported field kind: ' .. tostring(field.kind))
+    error('unsupported field kind: ' .. tostring(field.kind) .. ' at line ' .. tostring(field.line))
 end
 
 local function has_vararg(node)
@@ -115,7 +115,7 @@ local function expand_select(node, expected_count)
     -- dynamic expr  |  explicit    |  build runtime table {args}[expr]
     -- dynamic expr  |  vararg      |  arg[expr], arg[expr+1], ...
     if getn(node.args or {}) < 2 then
-        error('select() requires at least two arguments')
+        error('select() requires at least two arguments at line ' .. tostring(node.line))
     end
     local first_arg = node.args[1]
     local is_hash = false
@@ -218,7 +218,7 @@ end
 local function expand_select_multi(node)
     -- for return / last argument expansion -> outputs all values
     if getn(node.args or {}) < 2 then
-        error('select() requires at least two arguments')
+        error('select() requires at least two arguments at line ' .. tostring(node.line))
     end
 
     local first_arg = node.args[1]
@@ -296,7 +296,7 @@ function render_expression(node, context)
         end
     elseif node.type == 'VarArg' then
         if not context.in_vararg then
-            error("'...' used outside a vararg function – cannot transpile")
+            error("'...' used outside a vararg function – cannot transpile at line " .. tostring(node.line))
         end
         if context.expected_returns then
             local items = {}
@@ -314,7 +314,7 @@ function render_expression(node, context)
             elseif node.indexer.type == 'MemberExpr' then
                 text = text .. '.' .. node.indexer.member
             else
-                error('invalid Var indexer type: ' .. tostring(node.indexer.type))
+                error('invalid Var indexer type: ' .. tostring(node.indexer.type) .. ' at line ' .. tostring(node.line))
             end
         end
         return text
@@ -357,7 +357,7 @@ function render_expression(node, context)
         local arg_text = '(' .. concat(args, ', ') .. ')'
         if node.is_method then
             if not node.method then
-                error('CallExpr is_method true but missing method name')
+                error('CallExpr is_method true but missing method name at line ' .. tostring(node.line))
             end
             return func .. ':' .. node.method .. arg_text
         end
@@ -378,7 +378,7 @@ function render_expression(node, context)
             needs_len = true
             return '__lua51_len(' .. render_expression(node.expr, context) .. ')'
         end
-        error('unsupported unary operator: ' .. tostring(node.op))
+        error('unsupported unary operator: ' .. tostring(node.op) .. ' at line ' .. tostring(node.line))
     elseif node.type == 'TableConstructor' then
         if getn(node.fields or {}) == 1 and node.fields[1].kind == 'value' and node.fields[1].value.type == 'VarArg' then
             return 'arg'
@@ -402,7 +402,7 @@ function render_expression(node, context)
     elseif node.type == 'Parens' then
         return '(' .. render_expression(node.expr, context) .. ')'
     end
-    error('unsupported expression node: ' .. tostring(node.type))
+    error('unsupported expression node: ' .. tostring(node.type) .. ' at line ' .. tostring(node.line))
 end
 
 function render_statement(node, indent, context)
@@ -525,7 +525,7 @@ function render_statement(node, indent, context)
         local header = ''
         if node.is_local then
             if not node.name then
-                error('local function declaration must have a name')
+                error('local function declaration must have a name at line ' .. tostring(node.line))
             end
             header = 'local '
         end
@@ -578,7 +578,7 @@ function render_statement(node, indent, context)
     elseif node.type == 'Break' then
         return 'break'
     end
-    error('unsupported statement node: ' .. tostring(node.type))
+    error('unsupported statement node: ' .. tostring(node.type) .. ' at line ' .. tostring(node.line))
 end
 
 function render_block(block, indent, context)

@@ -22,6 +22,7 @@ local function SELFTEST()
 end
 
 function core.DIAGNOSTICS(category)
+    -- we keep <category?> despite the new '!diag' folder
     local passed = 0
     local failed = 0
     if not category then category = 'all' end

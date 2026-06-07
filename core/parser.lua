@@ -195,29 +195,31 @@ local function format_ast(node, indent)
 end
 
 local function parse_funcbody(s)
-    expect(s, 'lparen')
+    local paren_tok = expect(s, 'lparen')
     DEBG(2, "[parser] parse_funcbody")
-    local params = { type = 'ParameterList', names = {}, has_vararg = false }
+    local params = { type = 'ParameterList', names = {}, has_vararg = false, line = paren_tok.line, col = paren_tok.column }
     if peek(s) and peek(s).type ~= 'rparen' then
         if peek(s).type == 'vararg' then
             advance(s)
             params.has_vararg = true
         else
-            tinsert(params.names, { type = 'Identifier', name = expect(s, 'identifier').value })
+            local id_tok = expect(s, 'identifier')
+            tinsert(params.names, { type = 'Identifier', name = id_tok.value, line = id_tok.line, col = id_tok.column })
             while accept(s, 'comma') do
                 if peek(s) and peek(s).type == 'vararg' then
                     advance(s)
                     params.has_vararg = true
                     break
                 else
-                    tinsert(params.names, { type = 'Identifier', name = expect(s, 'identifier').value })
+                    local id_tok2 = expect(s, 'identifier')
+                    tinsert(params.names, { type = 'Identifier', name = id_tok2.value, line = id_tok2.line, col = id_tok2.column })
                 end
             end
         end
     end
-    expect(s, 'rparen')
+    local rparen_tok = expect(s, 'rparen')
     local body = parse_block(s, false)
-    expect(s, 'keyword', 'end')
+    local end_tok = expect(s, 'keyword', 'end')
     DEBG(2, "[parser] parse_funcbody done")
     return params, body
 end
@@ -225,20 +227,20 @@ end
 local function parse_var(s)
     local tok = expect(s, 'identifier')
     DEBG(2, "[parser] parse_var: '" .. tok.value .. "'")
-    local node = { type = 'Var', base = { type = 'Identifier', name = tok.value } }
+    local node = { type = 'Var', base = { type = 'Identifier', name = tok.value, line = tok.line, col = tok.column }, line = tok.line, col = tok.column }
     while true do
         local next = peek(s)
         if not next then break end
 
         if next.type == 'lbracket' then
-            advance(s)
+            local bracket_tok = advance(s)
             local idx = parse_exp(s, 0)
-            expect(s, 'rbracket')
-            node = { type = 'Var', base = node, indexer = { type = 'IndexExpr', index = idx } }
+            local rbracket_tok = expect(s, 'rbracket')
+            node = { type = 'Var', base = node, indexer = { type = 'IndexExpr', index = idx, line = bracket_tok.line, col = bracket_tok.column }, line = bracket_tok.line, col = bracket_tok.column }
         elseif next.type == 'dot' then
-            advance(s)
+            local dot_tok = advance(s)
             local name = expect(s, 'identifier')
-            node = { type = 'Var', base = node, indexer = { type = 'MemberExpr', member = name.value } }
+            node = { type = 'Var', base = node, indexer = { type = 'MemberExpr', member = name.value, line = name.line, col = name.column }, line = dot_tok.line, col = dot_tok.column }
         elseif next.type == 'lparen' or next.type == 'lbrace' or next.type == 'string' or next.type == 'colon' then
             break
         else
@@ -259,22 +261,22 @@ local function parse_prefix(s)
         if tok.value == 'nil' then val = nil
         elseif tok.value == 'true' then val = true
         else val = false end
-        return { type = 'Literal', value = val, raw = tok.value }
+        return { type = 'Literal', value = val, raw = tok.value, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'number' then
         advance(s)
-        return { type = 'Literal', value = tonumber(tok.value), raw = tok.value }
+        return { type = 'Literal', value = tonumber(tok.value), raw = tok.value, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'string' then
         advance(s)
-        return { type = 'Literal', value = tok.value, raw = tok.value }
+        return { type = 'Literal', value = tok.value, raw = tok.value, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'vararg' then
         advance(s)
-        return { type = 'VarArg' }
+        return { type = 'VarArg', line = tok.line, col = tok.column }
     end
 
     if tok.type == 'op_sub' or (tok.type == 'keyword' and tok.value == 'not') or tok.type == 'len' then
@@ -286,51 +288,50 @@ local function parse_prefix(s)
             op = tok.type
         end
         local expr = parse_exp(s, precedence['not'])
-        return { type = 'UnaryOp', op = op, expr = expr }
+        return { type = 'UnaryOp', op = op, expr = expr, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'lparen' then
         advance(s)
         local expr = parse_exp(s, 0)
         expect(s, 'rparen')
-        return { type = 'Parens', expr = expr }
+        return { type = 'Parens', expr = expr, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'lbrace' then
-        advance(s)
+        local lbrace_tok = advance(s)
         local fields = {}
         while peek(s) and peek(s).type ~= 'rbrace' do
             local field
             local first = peek(s)
             if first.type == 'lbracket' then
-                advance(s)
+                local bracket_tok = advance(s)
                 local key = parse_exp(s, 0)
-                expect(s, 'rbracket')
-                expect(s, 'op_assign')
+                local rbracket_tok = expect(s, 'rbracket')
+                local assign_tok = expect(s, 'op_assign')
                 local val = parse_exp(s, 0)
-                field = { type = 'Field', kind = 'key', key = key, value = val }
+                field = { type = 'Field', kind = 'key', key = key, value = val, line = bracket_tok.line, col = bracket_tok.column }
             elseif first.type == 'identifier' and peek(s, 1) and peek(s, 1).type == 'op_assign' then
-                advance(s)
-                local name = first.value
-                advance(s)
+                local id_tok = advance(s)
+                local assign_tok = advance(s)
                 local val = parse_exp(s, 0)
-                field = { type = 'Field', kind = 'keyvalue', key = { type = 'Identifier', name = name }, value = val }
+                field = { type = 'Field', kind = 'keyvalue', key = { type = 'Identifier', name = id_tok.value, line = id_tok.line, col = id_tok.column }, value = val, line = id_tok.line, col = id_tok.column }
             else
                 local val = parse_exp(s, 0)
-                field = { type = 'Field', kind = 'value', value = val }
+                field = { type = 'Field', kind = 'value', value = val, line = first.line, col = first.column }
             end
             tinsert(fields, field)
             accept(s, 'comma')
             accept(s, 'semicolon')
         end
-        expect(s, 'rbrace')
-        return { type = 'TableConstructor', fields = fields }
+        local rbrace_tok = expect(s, 'rbrace')
+        return { type = 'TableConstructor', fields = fields, line = lbrace_tok.line, col = lbrace_tok.column }
     end
 
     if tok.type == 'keyword' and tok.value == 'function' then
         advance(s)
         local params, body = parse_funcbody(s)
-        return { type = 'FunctionExpression', params = params, body = body }
+        return { type = 'FunctionExpression', params = params, body = body, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'identifier' then
@@ -351,7 +352,7 @@ local function parse_infix(s, left, prec)
         local next_prec = precedence[op]
         if op == 'op_pow' or op == 'concat' then next_prec = next_prec - 1 end
         local right = parse_exp(s, next_prec)
-        return { type = 'BinaryOp', op = op, left = left, right = right }
+        return { type = 'BinaryOp', op = op, left = left, right = right, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'keyword' and (tok.value == 'or' or tok.value == 'and') then
@@ -360,11 +361,11 @@ local function parse_infix(s, left, prec)
         local op = tok.value
         local next_prec = precedence[op]
         local right = parse_exp(s, next_prec)
-        return { type = 'BinaryOp', op = op, left = left, right = right }
+        return { type = 'BinaryOp', op = op, left = left, right = right, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'lparen' then
-        advance(s)
+        local lparen_tok = advance(s)
         local args = {}
         if peek(s) and peek(s).type ~= 'rparen' then
             args = { parse_exp(s, 0) }
@@ -372,22 +373,22 @@ local function parse_infix(s, left, prec)
                 tinsert(args, parse_exp(s, 0))
             end
         end
-        expect(s, 'rparen')
-        return { type = 'CallExpr', func = left, args = args, is_method = false }
+        local rparen_tok = expect(s, 'rparen')
+        return { type = 'CallExpr', func = left, args = args, is_method = false, line = lparen_tok.line, col = lparen_tok.column }
     end
 
     if tok.type == 'lbrace' then
         local table_node = parse_prefix(s)
-        return { type = 'CallExpr', func = left, args = { table_node }, is_method = false }
+        return { type = 'CallExpr', func = left, args = { table_node }, is_method = false, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'string' then
         local str_node = parse_prefix(s)
-        return { type = 'CallExpr', func = left, args = { str_node }, is_method = false }
+        return { type = 'CallExpr', func = left, args = { str_node }, is_method = false, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'colon' then
-        advance(s)
+        local colon_tok = advance(s)
         local method_name = expect(s, 'identifier')
         local args = {}
         if accept(s, 'lparen') then
@@ -403,34 +404,35 @@ local function parse_infix(s, left, prec)
         elseif peek(s) and peek(s).type == 'string' then
             args = { parse_prefix(s) }
         end
-        return { type = 'CallExpr', func = left, args = args, is_method = true, method = method_name.value }
+        return { type = 'CallExpr', func = left, args = args, is_method = true, method = method_name.value, line = colon_tok.line, col = colon_tok.column }
     end
 
     if tok.type == 'lbracket' then
-        advance(s)
+        local bracket_tok = advance(s)
         local index = parse_exp(s, 0)
-        expect(s, 'rbracket')
-        return { type = 'Var', base = left, indexer = { type = 'IndexExpr', index = index } }
+        local rbracket_tok = expect(s, 'rbracket')
+        return { type = 'Var', base = left, indexer = { type = 'IndexExpr', index = index, line = bracket_tok.line, col = bracket_tok.column }, line = bracket_tok.line, col = bracket_tok.column }
     end
 
     if tok.type == 'dot' then
-        advance(s)
+        local dot_tok = advance(s)
         local name = expect(s, 'identifier')
-        return { type = 'Var', base = left, indexer = { type = 'MemberExpr', member = name.value } }
+        return { type = 'Var', base = left, indexer = { type = 'MemberExpr', member = name.value, line = name.line, col = name.column }, line = dot_tok.line, col = dot_tok.column }
     end
 
     return left
 end
 
 local function parse_retstat(s, can_break)
-    if accept(s, 'keyword', 'break') then
+    local break_tok = accept(s, 'keyword', 'break')
+    if break_tok then
         DEBG(2, "[parser] parse_retstat: break")
         if not can_break then parser_error(s, "'break' not inside a loop") end
-        return { type = 'Break' }
+        return { type = 'Break', line = break_tok.line, col = break_tok.column }
     end
-    expect(s, 'keyword', 'return')
+    local return_tok = expect(s, 'keyword', 'return')
     DEBG(2, "[parser] parse_retstat: return")
-    local node = { type = 'Return', exprs = {} }
+    local node = { type = 'Return', exprs = {}, line = return_tok.line, col = return_tok.column }
     local nxt = peek(s)
     if not nxt or (nxt.type == 'keyword' and
        (nxt.value == 'end' or nxt.value == 'else' or nxt.value == 'elseif' or nxt.value == 'until')) then
@@ -452,40 +454,46 @@ local function parse_statement(s, can_break)
 
     if accept(s, 'semicolon') then return parse_statement(s, can_break) end
 
-    if accept(s, 'keyword', 'do') then
+    local do_tok = accept(s, 'keyword', 'do')
+    if do_tok then
         local block = parse_block(s, true)
-        expect(s, 'keyword', 'end')
-        return { type = 'DoBlock', block = block }
+        local end_tok = expect(s, 'keyword', 'end')
+        return { type = 'DoBlock', block = block, line = do_tok.line, col = do_tok.column }
     end
 
-    if accept(s, 'keyword', 'while') then
+    local while_tok = accept(s, 'keyword', 'while')
+    if while_tok then
         local cond = parse_exp(s, 0)
-        expect(s, 'keyword', 'do')
+        local do_tok2 = expect(s, 'keyword', 'do')
         s.loop_depth = s.loop_depth + 1
         local block = parse_block(s, true)
         s.loop_depth = s.loop_depth - 1
-        expect(s, 'keyword', 'end')
-        return { type = 'WhileLoop', condition = cond, block = block }
+        local end_tok = expect(s, 'keyword', 'end')
+        return { type = 'WhileLoop', condition = cond, block = block, line = while_tok.line, col = while_tok.column }
     end
 
-    if accept(s, 'keyword', 'repeat') then
+    local repeat_tok = accept(s, 'keyword', 'repeat')
+    if repeat_tok then
         s.loop_depth = s.loop_depth + 1
         local block = parse_block(s, true)
         s.loop_depth = s.loop_depth - 1
-        expect(s, 'keyword', 'until')
+        local until_tok = expect(s, 'keyword', 'until')
         local cond = parse_exp(s, 0)
-        return { type = 'RepeatLoop', block = block, condition = cond }
+        return { type = 'RepeatLoop', block = block, condition = cond, line = repeat_tok.line, col = repeat_tok.column }
     end
 
-    if accept(s, 'keyword', 'if') then
+    local if_tok = accept(s, 'keyword', 'if')
+    if if_tok then
         local clauses = {}
         local cond = parse_exp(s, 0)
-        expect(s, 'keyword', 'then')
+        local then_tok = expect(s, 'keyword', 'then')
         local block = parse_block(s, can_break)
         tinsert(clauses, { condition = cond, block = block })
-        while accept(s, 'keyword', 'elseif') do
+        while true do
+            local elseif_tok = accept(s, 'keyword', 'elseif')
+            if not elseif_tok then break end
             cond = parse_exp(s, 0)
-            expect(s, 'keyword', 'then')
+            local then_tok2 = expect(s, 'keyword', 'then')
             block = parse_block(s, can_break)
             tinsert(clauses, { condition = cond, block = block })
         end
@@ -493,89 +501,115 @@ local function parse_statement(s, can_break)
         if accept(s, 'keyword', 'else') then
             elseblock = parse_block(s, can_break)
         end
-        expect(s, 'keyword', 'end')
-        return { type = 'IfStatement', clauses = clauses, elseblock = elseblock }
+        local end_tok = expect(s, 'keyword', 'end')
+        return { type = 'IfStatement', clauses = clauses, elseblock = elseblock, line = if_tok.line, col = if_tok.column }
     end
 
-    if accept(s, 'keyword', 'for') then
+    local for_tok = accept(s, 'keyword', 'for')
+    if for_tok then
         local name = expect(s, 'identifier')
         if accept(s, 'op_assign') then
             local start = parse_exp(s, 0)
-            expect(s, 'comma')
+            local comma_tok = expect(s, 'comma')
             local stop = parse_exp(s, 0)
             local step
-            if accept(s, 'comma') then step = parse_exp(s, 0) end
-            expect(s, 'keyword', 'do')
+            local step_comma = accept(s, 'comma')
+            if step_comma then step = parse_exp(s, 0) end
+            local do_tok2 = expect(s, 'keyword', 'do')
             s.loop_depth = s.loop_depth + 1
             local block = parse_block(s, true)
             s.loop_depth = s.loop_depth - 1
-            expect(s, 'keyword', 'end')
+            local end_tok = expect(s, 'keyword', 'end')
             return {
                 type = 'ForNumeric',
-                var = { type = 'Identifier', name = name.value },
+                var = { type = 'Identifier', name = name.value, line = name.line, col = name.column },
                 start = start, stop = stop, step = step,
-                block = block
+                block = block,
+                line = for_tok.line, col = for_tok.column
             }
         else
-            local vars = { { type = 'Identifier', name = name.value } }
-            while accept(s, 'comma') do
-                tinsert(vars, { type = 'Identifier', name = expect(s, 'identifier').value })
+            local vars = { { type = 'Identifier', name = name.value, line = name.line, col = name.column } }
+            while true do
+                local comma_tok = accept(s, 'comma')
+                if not comma_tok then break end
+                local id_tok = expect(s, 'identifier')
+                tinsert(vars, { type = 'Identifier', name = id_tok.value, line = id_tok.line, col = id_tok.column })
             end
-            expect(s, 'keyword', 'in')
+            local in_tok = expect(s, 'keyword', 'in')
             local iters = { parse_exp(s, 0) }
-            while accept(s, 'comma') do
+            while true do
+                local comma_tok = accept(s, 'comma')
+                if not comma_tok then break end
                 tinsert(iters, parse_exp(s, 0))
             end
-            expect(s, 'keyword', 'do')
+            local do_tok2 = expect(s, 'keyword', 'do')
             s.loop_depth = s.loop_depth + 1
             local block = parse_block(s, true)
             s.loop_depth = s.loop_depth - 1
-            expect(s, 'keyword', 'end')
-            return { type = 'ForGeneric', vars = vars, iters = iters, block = block }
+            local end_tok = expect(s, 'keyword', 'end')
+            return { type = 'ForGeneric', vars = vars, iters = iters, block = block, line = for_tok.line, col = for_tok.column }
         end
     end
 
-    if accept(s, 'keyword', 'function') then
+    local function_tok = accept(s, 'keyword', 'function')
+    if function_tok then
         local is_local = false -- TODO logos
         local name_node
         local method_name
         local tok2 = peek(s)
         if tok2 and tok2.type == 'identifier' then
-            local name_parts = { expect(s, 'identifier').value }
-            while accept(s, 'dot') do
-                tinsert(name_parts, expect(s, 'identifier').value)
+            local first_name = expect(s, 'identifier')
+            local name_parts = { first_name.value }
+            while true do
+                local dot_tok = accept(s, 'dot')
+                if not dot_tok then break end
+                local part_tok = expect(s, 'identifier')
+                tinsert(name_parts, part_tok.value)
             end
             if accept(s, 'colon') then
                 method_name = expect(s, 'identifier').value
             end
-            name_node = { type = 'Identifier', name = name_parts[1] }
+            name_node = { type = 'Identifier', name = name_parts[1], line = first_name.line, col = first_name.column }
+            local var_node = name_node
             for i = 2, tgetn(name_parts) do
-                name_node = { type = 'Var', base = name_node, indexer = { type = 'MemberExpr', member = name_parts[i] } }
+                var_node = { type = 'Var', base = var_node, indexer = { type = 'MemberExpr', member = name_parts[i], line = first_name.line, col = first_name.column } }
+            end
+            if tgetn(name_parts) > 1 then
+                name_node = var_node
             end
         -- method name is stored separately on FunctionDecl to preserve colon syntax
         end
         local params, body = parse_funcbody(s)
-    return { type = 'FunctionDecl', is_local = is_local, name = name_node, params = params, body = body, method = method_name }
+        return { type = 'FunctionDecl', is_local = is_local, name = name_node, params = params, body = body, method = method_name, line = function_tok.line, col = function_tok.column }
     end
 
-    if accept(s, 'keyword', 'local') then
-        if accept(s, 'keyword', 'function') then
+    local local_tok = accept(s, 'keyword', 'local')
+    if local_tok then
+        local func_tok2 = accept(s, 'keyword', 'function')
+        if func_tok2 then
             local name = expect(s, 'identifier')
             local params, body = parse_funcbody(s)
-            return { type = 'FunctionDecl', is_local = true, name = { type = 'Identifier', name = name.value }, params = params, body = body }
+            return { type = 'FunctionDecl', is_local = true, name = { type = 'Identifier', name = name.value, line = name.line, col = name.column }, params = params, body = body, line = local_tok.line, col = local_tok.column }
         end
-        local names = { { type = 'Identifier', name = expect(s, 'identifier').value } }
-        while accept(s, 'comma') do
-            tinsert(names, { type = 'Identifier', name = expect(s, 'identifier').value })
+        local first_id = expect(s, 'identifier')
+        local names = { { type = 'Identifier', name = first_id.value, line = first_id.line, col = first_id.column } }
+        while true do
+            local comma_tok = accept(s, 'comma')
+            if not comma_tok then break end
+            local id_tok = expect(s, 'identifier')
+            tinsert(names, { type = 'Identifier', name = id_tok.value, line = id_tok.line, col = id_tok.column })
         end
         local values = {}
-        if accept(s, 'op_assign') then
+        local assign_tok = accept(s, 'op_assign')
+        if assign_tok then
             values = { parse_exp(s, 0) }
-            while accept(s, 'comma') do
+            while true do
+                local comma_tok = accept(s, 'comma')
+                if not comma_tok then break end
                 tinsert(values, parse_exp(s, 0))
             end
         end
-        return { type = 'LocalDecl', names = names, values = values }
+        return { type = 'LocalDecl', names = names, values = values, line = local_tok.line, col = local_tok.column }
     end
 
     if tok.type == 'keyword' and tok.value == 'return' then
@@ -583,9 +617,9 @@ local function parse_statement(s, can_break)
     end
 
     if tok.type == 'keyword' and tok.value == 'break' then
-        advance(s)
+        local brk_tok = advance(s)
         if not can_break then parser_error(s, "'break' not inside a loop") end
-        return { type = 'Break' }
+        return { type = 'Break', line = brk_tok.line, col = brk_tok.column }
     end
 
     if tok.type == 'identifier' then
@@ -599,7 +633,7 @@ local function parse_statement(s, can_break)
                 if next == call_node then break end
                 call_node = next
             end
-            return { type = 'FunctionCall', call = call_node }
+            return { type = 'FunctionCall', call = call_node, line = tok.line, col = tok.column }
         end
 
         if tok2 and tok2.type == 'op_assign' then
@@ -607,12 +641,12 @@ local function parse_statement(s, can_break)
             while accept(s, 'comma') do
                 tinsert(targets, parse_var(s))
             end
-            expect(s, 'op_assign')
+            local assign_tok = expect(s, 'op_assign')
             local values = { parse_exp(s, 0) }
             while accept(s, 'comma') do
                 tinsert(values, parse_exp(s, 0))
             end
-            return { type = 'Assignment', targets = targets, values = values, ['local'] = false }
+            return { type = 'Assignment', targets = targets, values = values, ['local'] = false, line = tok.line, col = tok.column }
         end
 
         if tok2 and tok2.type == 'comma' then -- TODO logos
@@ -620,25 +654,25 @@ local function parse_statement(s, can_break)
             while accept(s, 'comma') do
                 tinsert(targets, parse_var(s))
             end
-            expect(s, 'op_assign')
+            local assign_tok = expect(s, 'op_assign')
             local values = { parse_exp(s, 0) }
             while accept(s, 'comma') do
                 tinsert(values, parse_exp(s, 0))
             end
-            return { type = 'Assignment', targets = targets, values = values, ['local'] = false }
+            return { type = 'Assignment', targets = targets, values = values, ['local'] = false, line = tok.line, col = tok.column }
         end
 
-        return { type = 'FunctionCall', call = { type = 'CallExpr', func = first_var, args = {} } }
+        return { type = 'FunctionCall', call = { type = 'CallExpr', func = first_var, args = {}, line = tok.line, col = tok.column }, line = tok.line, col = tok.column }
     end
 
     if tok.type == 'lparen' then
-        advance(s)
+        local lparen_tok = advance(s)
         local expr = parse_exp(s, 0)
-        expect(s, 'rparen')
+        local rparen_tok = expect(s, 'rparen')
         local tok2 = peek(s)
         if tok2 and tok2.type == 'lparen' then
-            local call_node = parse_infix(s, { type = 'Parens', expr = expr }, 0)
-            return { type = 'FunctionCall', call = call_node }
+            local call_node = parse_infix(s, { type = 'Parens', expr = expr, line = lparen_tok.line, col = lparen_tok.column }, 0)
+            return { type = 'FunctionCall', call = call_node, line = lparen_tok.line, col = lparen_tok.column }
         end
         if tok2 and tok2.type == 'op_assign' then
             parser_error(s, "invalid assignment target")
