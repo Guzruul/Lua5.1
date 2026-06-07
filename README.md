@@ -2,9 +2,8 @@
 
 **`Lua5.1` is a stand-alone runtime mini-transpiler and service layer for World of Warcraft Vanilla 1.12.1 that tries to emulate `Lua5.1` and Blizzard's private table system introduced in Wotlk 3.0.**
 
-If you are a beginner dev, don' rely to much on this since you wont be able to debug.
-Use only small functions or small code blocks inside `Lua51`. Keep things isolated.
-And enjoy the private namespace! :)
+If you are a beginner dev, don't rely to much on this since you wont be able to debug.
+Use only small functions or small code blocks inside `___Lua51()`. Keep things isolated.
 
 - 100% Lua
 - 100% stand-alone
@@ -12,21 +11,21 @@ And enjoy the private namespace! :)
 
 ## Features
 
-- It translates `Lua5.1` syntax down to `Lua 5.0`
+- It translates `Lua 5.1` syntax down to `Lua 5.0`
 - It emulates the WotlK private namespace system for every addon/file
 
-## Function
+## Main Function
 
-- `___Lua51([[ < your Lua5.1 code > ]])` - returns up to 2 optional arguments of your choice.
+- `___Lua51([[ < your Lua 5.1 code > ]])` - returns up to 2 optional arguments of your choice.
 
-## Operators for WoW Vanilla
+## Lua 5.1 Operators for WoW Vanilla
 - `#`   - lenght operator
 - `%`   - modulo operator
-- `...` - vararg operator - NOW usable as expression!
+- `...` - vararg operator - now usable as expression
 
         local a1,a2,a3 = ...
 
-## Functions for WoW Vanilla
+## Lua 5.1 Functions for WoW Vanilla
 
 - `select`(n: number, ...: any)  - returns values from index n onward
 
@@ -39,9 +38,9 @@ And enjoy the private namespace! :)
         print(a, b, c) → "a  b  c"
 
 
-## Lua 5.1 Code Syntax
+## Code Syntax
 
-### Lua 5.1 Inline Usage
+### Inline Usage
 
 Example 1
 
@@ -82,7 +81,7 @@ Example 4
         local a, b = minmax(select(2, 'x', 10, 30, 5)) --  will be a = 5 and b = 30
     ]])
 
-### Lua 5.1 Return Usage
+### Return Usage
 
 Example 1:
 
@@ -95,7 +94,7 @@ Example 2:
     local calculate = ___Lua51([[ return 10 % 3 ]]) -- returns up to 2 args from the pipeline
     print(calculate)                                -- will print out 1 from the transpiled code
 
-### Enviroment Switch
+## Lua 5.0 / 5.1 Interop
 
 You can easily switch between Lua5.1 and Lua5.0 directly in the file:
 
@@ -145,9 +144,9 @@ Return:
 
 ## Scope
 
-`___Lua51()` body executes in WoW's global environment.
+`___Lua51()` executes inside WoW's global environment.
 
-However, each `___Lua51()` call has its own scope. Therefore:
+However, each `___Lua51()` call has its own local scope.
 
     ___Lua51([[ local var = 1 ]])
     ___Lua51([[ new = var + 1 ]])   -- nil here
