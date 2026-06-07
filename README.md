@@ -1,4 +1,4 @@
-# Lua5.1 - Service Transpiler for WoW Vanilla 1.12.1
+# Lua5.1 - Service Framework for WoW Vanilla 1.12.1
 
 **`Lua5.1` is a stand-alone runtime mini-transpiler and service layer for World of Warcraft Vanilla 1.12.1 that tries to emulate `Lua5.1` and Blizzard's private table system introduced in Wotlk 3.0.**
 
