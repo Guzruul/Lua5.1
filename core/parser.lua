@@ -1,20 +1,3 @@
---[[ improvements  v1 ] =======================================================
-    ============================================================================
-    1. colon method syntax in function declarations
-       function t:f() end now correctly preserves the colon in the AST! finally.
-       previously, the method name after ':' was appended as a plain MemberExpr
-       (~ iddentical to dot syntax), making t:f() and t.f() indistinguisable.
-
-       fix: the method name is now stored as 'node.method' on the FunctionDecl
-       node instead of being appended to the name chain via MemberExpr.
-       the companion transpiler change emits ':' when node.method is present.
-       this should fix the issue.
-
-       example:
-         input:  function t:f(x) end
-         ast:    FunctionDecl{ name=Identifier('t'), method='f', params={x} }
-         output: function t:f(x)
-]]
 local core = ___Lua51reg'parser'
 
 if ( core.PARS ) then return end

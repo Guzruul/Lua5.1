@@ -1,176 +1,11 @@
---[[ improvements v1 ] =======================================================
-    ============================================================================
-    1. the '...' token can only appear in a function parameter list or at the
-       top level of a chunk (as in wow addon loading). top‑level '...' is
-       allowed and will be converted to the 'arg' table.
-       valid:   function f(...) end   and   local addon, ns = ...
-       default behavior: invalid: {...}  or  select(2, ...)  or
-       local t = {...}   (inside a function without '...')
-
-    2. in a vararg function, lua 5.0 automatically creates a local table named 'arg'
-       containing all extra arguments. use 'arg' directly.
-       example: local args = arg   -- instead of local args = {...}
-
-    3. to emulate select('#', ...)   -> use table.getn(arg)
-    4. to emulate select(n, ...) where n is a number >= 1:
-       - standard lua would use unpack(arg, n) but in wow, unpack(arg, n) returns
-       elements starting from index 1 (broken behavior).
-       - therefore, expand select(n, ...) into explicit arg indexes:
-       for local a, b = select(2, ...)   -> emit: local a, b = arg[2], arg[3]
-       for print(select(2, ...))         -> emit: print(arg[2])
-
-
-    ============================================================================
-    expand_select v1 helper: given a select call node and the expected number
-    of return values (or nil if unknown), return a string of
-    expressions (comma separated) to replace the call.
-    ============================================================================
-]]
---[[ improvements v2 ] =======================================================
-    ============================================================================
-    1. multi‑return select() in assignments
-       only the *last* value on the right‑hand side of an assignment or local
-       declaration receives the expected‑return count, exactly matching lua's
-       semantics. earlier select() calls (or any callexpr) are truncated to a
-       single value.
-
-    2. select() in return statements
-       return select(n, ...) now expands to up to max_vararg (20) explicit
-       arguments: arg[n], arg[n+1], ... , arg[n+19]. this avoids the broken
-       unpack() and preserves correct multi‑return behaviour within that limit.
-
-    3. vararg context validation
-       using '...' outside a vararg function now raises a clear transpile‑time
-       error instead of silently producing a nil reference bug. functions with
-       '...' correctly propagate an in_vararg flag to their bodies.
-       top‑level '...' is allowed (chunk is treated as an implicit vararg function).
-
-    4. local function without name
-       a local function declaration missing a name now throws an explicit error
-       rather than silently dropping the 'local' keyword.
-
-    5. defensive field access
-       added (node.xxx or {}) guards in several places to prevent crashes on
-       malformed ast nodes, making error messages more descriptive.
-
-    6. context pass‑through
-       the rendering functions now pass a 'context' table consistently (through
-       expressions, statements, and blocks), enabling proper handling of
-       in_vararg and expected_returns without global state pollution.
-
-    ============================================================================
-    notes: max_vararg is set to 20 we might need to raise.
-    the generated code prepends __lua51_len and __lua51_mod helpers only when
-    the '#/len' or '%/mod' operators are actually used.
-    ============================================================================
-]]
---[[ improvements v3 ] =======================================================
-    ============================================================================
-    1. vararg multi‑return expansion
-       local addon, ns = ...  now emits: local addon, ns = arg[1], arg[2]
-       previously emitted: local addon, ns = arg  (assigns whole table to addon)
-
-       render_expression for vararg: when context.expected_returns is set,
-       expand to arg[1], arg[2], ... instead of bar 'arg'.
-       render_statement for assignment/localdecl: treat vararg like callexpr
-       for multi‑return (only last value expands to fill targets).
-
-    2. loader wrapper (lua5.1.lua)
-       transpiled code is wrapped in (function(...) ... end) so lua 5.0
-       creates local 'arg'. without this, loadstring() creates a plain
-       function with no '...', and 'arg' would be nil global.
-
-    3. addon name detection (lua5.1.lua)
-       run() extracts caller addon folder from debugstack.
-       addon_namespaces table stores one namespace per addon.
-       runner(addon_name, addon_namespaces[addon_name]) replaces old
-       hardcoded runner('lua5_1', {}).
-
-       multiple files in the same addon folder receive the same ns table,
-       matching wow's native addon loading behaviour.
-     ============================================================================
-]]
---[[ improvements v4 ] =======================================================
-    ============================================================================
-    1. explicit select() argument handling
-       select() now works correctly with both explicit values and varargs.
-       select('#', 1, 2, 3)  -> count: returns "3"
-       select(2, 'x', 'y', 'z')  -> pick: returns "y"
-       local a, b = select(2, 'x', 'y', 'z')  -> multi-return: a='y', b='z'
-       previously all select() calls assumed varargs via arg[] table.
-
-    2. has_vararg() guard
-       new helper checks if select() arguments contain a VarArg token.
-       if all args are explicit literals, bypasses the arg[] expansion
-       and renders them directly. no more broken table.getn(arg) for
-       explicit argument lists.
-
-    3. dynamic index with explicit args
-       select(i, 10, 20, 30) with a variable index now builds a runtime
-       table {10, 20, 30} and indexes into it: ({10, 20, 30})[i] (still unsure why tho, so its TODO ...)
-       this covers edge cases where neither the index nor the values
-       are vararg-bound.
-
-    4. litteral index optimization
-       when the select index is a literal number (e.g. select(1, ...)),
-       the emitted code now uses clean direct indices:
-       arg[1], arg[2], arg[3]  instead of  arg[1], arg[1 + 1], arg[1 + 2]
-       same for expand_select_multi -> return statements emit
-       arg[1], ..., arg[20]  instead of  arg[1 + 0], ..., arg[1 + 19].
-
-    5. off‑by‑one fix in expand_select_multi
-       return select(2, 10, 20, 30) now correctly returns "20, 30"
-       instead of just "30". the condition was i > 1 + idx,
-       changed to i >= 1 + idx.
-
-    6. hash select in expand_select_multi
-       return select('#', ...) now correctly emits 'table.getn(arg)'
-       instead of expanding '#' as a numeric index into
-       arg['#'], arg['#' + 1], ..., arg['#' + 19].
-       this affected return statements inside vararg functions.
-       added an is_hash guard before the vararg expansion path.
-
-    7. context leak fix in nested call arguments (keep an eye out for #6 stilll...)
-       bug: when select() appears as an argument inside another function call,
-       e.g. local a, b = minmax(select(2, 'x', 10, 30, 5)), the assignment's
-       expected_returns (2) leaked through context into expand_select, causing
-       it to output only 2 values ("10, 30") instead of all 3 ("10, 30, 5").
-       fix A: non-select CallExpr arg rendering now creates a clean arg_context
-       without expected_returns, only preserving in_vararg.
-       fix B: expand_select nil-count path now expands all remaining explicit
-       values (num_remaining = #args - (1 + idx) + 1) instead of returning
-       just the first one. done for now... more transpiler work soonTM.
-    ============================================================================
-]]
---[[ improvements v5 ] =======================================================
-    ============================================================================
-    1. gmatch() implementation (string.gmatch emulation)
-       added __lua51_gmatch helper injected alongside len/mod/match.
-       first version used unpack(results, 3) to return captures — same broken
-       unpack() behaviour as seen in expand_select: WoW 1.12.1 unpack ignores
-       the offset and starts from index 1, returning string.find positions
-       instead of actual capture values.
-
-       so: replaced table + broken-unpack with explicit local variables:
-         local _, e, c1, c2, c3, c4, c5 = string.find(...)
-         if c1 ~= nil then return c1..c5 else return string.sub(s, _, e) end
-       supports up to 5 captures per pattern, avoids unpack entirely.
-
-       context: never use unpack(n, offset) in WoW Vanilla — its is broken.
-       always expand multi-return explicitly via direct variable assignments
-    ============================================================================
-]]
-
--- WORK IN PROGRESS - this is a warzone in here so be careful
-
 local core = ___Lua51reg'transpiler'
 
 if ( core.TPIL ) then return end
 
-local type = type
-local error = error
-local table = table
 local DEBG = DEBG
+local type = type
+local table = table
+local error = error
 local ipairs = ipairs
 local getn = table.getn
 local strrep = string.rep
@@ -186,7 +21,7 @@ local needs_len = false
 local needs_match = false
 local needs_gmatch = false
 
-local MAX_VARARG = 20 -- we keep this at 20 for now, quie generous
+local MAX_VARARG = 20 -- for now
 
 local op_map = {
     op_add = '+', op_sub = '-', op_mul  = '*', op_div   = '/', op_pow   = '^',

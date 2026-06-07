@@ -1,35 +1,3 @@
---[[ improvements v1 ] ==================================================
-    ============================================================================
-    1. string.sub(src, i, i): string.byte(src, i) for all single-character lookups
-            strsub returns a 1-character string -> GC allocation every call.
-            strbyte returns a plain number so noo GC allocation. in the main
-            tokenizer loop, strsub was called on every single character of the
-            sourcee, the single biggest source of GC garbage in the entire
-            pipeline! strbyte eliminates ~22,000 string allocations per 1000
-            lines of source transpiled... kinda dumb not to use strbyte right.
-
-       what changed:
-       - every if/while condition that compared a single character now uses
-         strbyte and compares against a byte constant instead of a
-         string literal, so no more nonsennse GC allocations
-       - is_letter(), is_digit(), is_alphanum() now accept a byte
-         instead of a 1-char string
-       - the final error message uses strchar(c) to convert the byte back to
-         a readable character for user
-
-    2. Lua 5.0 32-upvalue limit (what a fun one):
-            every local variable at file level becomes an upvalue for every
-            inner function, with 35 individual BYTE_xxx locals, the tokenizer
-            exceeded lua 5.0s hard limit of 32 upvalues, causing a load error:
-            "too many upvalues (limit=32) near 'then'", hehe.
-
-        solution: all byte constants are stored as fields of a single local
-        table 'byte'. a table is just one upvalue regardless of how many fields
-        it holds, so its no problem to exceed the limit.
-        lua makes perfect sense, it just makes sense.
-    ============================================================================
-]]
-
 local core = ___Lua51reg'tokenizer'
 
 if ( core.TOKN ) then return end
@@ -308,7 +276,7 @@ function core.TOKN(src)
     while pos <= len do
         local c = strbyte(src, pos)
 
-        -- whitespace is here -->------------------>----------------------->
+        -- whitespace -->------------------>----------------------->
         if c == byte.SPACE or c == byte.TAB or c == byte.FORMFEED or c == byte.VTAB then
             pos = pos + 1
             col = col + 1
