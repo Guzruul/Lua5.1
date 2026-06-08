@@ -43,8 +43,8 @@ if not _LUA51_CORE_DEBUG_FLAGS then _LUA51_CORE_DEBUG_FLAGS = {
 
 local RUN_TOKENIZER     = true
 local RUN_PARSER        = true
-local RUN_TRANSPILER    = false
-local RUN_LOADER        = false
+local RUN_TRANSPILER    = true
+local RUN_LOADER        = true
 
 --------- core ----------------------------
 
