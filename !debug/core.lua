@@ -38,7 +38,7 @@ if _LUA51_CORE_DEBUG_CONTROLLER == 0 then
 print('============ |cFFFFFFFFDC LVL: ' .. _LUA51_CORE_DEBUG_CONTROLLER .. '|r ================',1,0,0) end
 
 SLASH_LOAD1 = '/load'
-SlashCmdList['L51X'] = function(addon)
+SlashCmdList['LOAD'] = function(addon)
     if addon == '' then print('Usage: /load ADDONNAME') return end
     local _, _, _, _, _, reason = GetAddOnInfo(addon)
     if reason ~= 'MISSING' then EnableAddOn(addon) ReloadUI()
