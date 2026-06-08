@@ -132,14 +132,6 @@ end
 
 local function on_error(err_state)
     debugp(1, '================= |cFFFFFFFFERROR HANDLER|r ==')
-    -- on_error need special handling for transpiler bugs for 3 reasons:
-    -- 1) transpiler bugs bypass blizz proper error handle due to error (loadstring returns [string :] err msg)
-    -- 2) other addons fiddling with the errorhandler -> double prints
-    -- 3) transpiler bugs must propagate at all cost
-    -- assert has no level control, wich need, so use
-    -- error(msg, 3) to point the error to the ___Lua51() caller
-    -- blizz errorhandler uses _ERRORMESSAGE() (BasicControls.xml) which depends on
-    -- ScriptErrors, if ScriptErrors = nil, error() silently returns --v1
     local msg = 'Lua5.1 INTERNAL on_error: '..err_state..'  |  Please report this on Github!'
     -- check core func : error()
     local err_state_check = check_functions'err'
@@ -176,14 +168,6 @@ local function on_error(err_state)
 end
 
 local function on_call(src)
-    -- main processing func, runs the whole pipeline
-    -- have to deal with 3 error types:
-    -- 1) before pipeline -> assert() is fine, since regular code
-    ----> regular lua errors on the libs file level, assert -> lib dev problem
-    -- 2) inside pipeline -> on_error() catches, loadstring obfuscates origin
-    ----> transpiler bugs that happen inside loadstring         -> lib dev problem
-    -- 3) after execution -> wow handles, @src_file prefix for attribution
-    ----> regular lua/wow errors after code translation   -> user problem
     assert(type(src) == 'string', 'on_call: src ~= string')
     debugp(1, '================== |cFFFFFFFFLOAD START|r ==')
     debugp(1, '|cFFFFFFFFLOAD: Raw src: '..src)
@@ -216,9 +200,7 @@ local function on_call(src)
 
     if not RUN_LOADER then return end
     local l_start = GetTime()
-    -- we need to get the addons name and calling files
-    -- to assign the right namespace table to each addon,
-    -- and for proper error handling due to loadstring (read below)
+    -- get addons name and files for namespaces
     assert(check_functions'dbg', 'on_call: debugstack broken, cannot parse source file')
     local stack = debugstack(2, 1, 1)
     assert(stack, 'on_call: debugstack returned nil')
@@ -227,22 +209,13 @@ local function on_call(src)
     local _, _, addon = strfind(src_file, '([^\\]+)\\')
     assert(addon, 'on_call: Could not extract addon name from: ' .. src_file)
     debugp(1, 'on_call: Src file: ' .. src_file .. ' - HOST: ' .. addon)
-    -----------> so! in wotlk, each file gets passed 2 arguments, files
-    -- are functions to lua, and they receive addonname and private table.
-    -- We emulate this system by wrapping the code in a vararg function.
-    -- WoW vanilla only creates arg table for vararg when passed as function param!
-    --> wrap code in a vararg function so 'arg' is created by WoW
-    ---> allows passing <addonname, namespace> to each addon file like wotlk
+
+    -- create wrapper to get the vararg table
     local wrapper = 'return (function(...)\n' .. code .. '\nend)'
-    -- since loadstring returns any error as 'string',
-    -- and pcall returns full source code up to error line in err_state,
-    -- AND because we want to stay as noninvasive as possible (no seterrorhandler()),
-    -- all we do is append the src_file to the error, rest is up to users, let blizz handle that
     assert(check_functions'ls', 'on_call: loadstring broken, cannot on_call code')
-    func, err_state = loadstring(wrapper, '@' .. src_file) -- v2 i hate lying to lua -> @ prefix = file path in errors (lua 5.0 manual 4.1)
+    func, err_state = loadstring(wrapper, '@' .. src_file)
     debugp(1, 'on_call: Loadstring returned: ' .. tstr(func) .. ' and err_state: ' .. tstr(err_state))
-    -- install our main error path
-    -- if not func then on_error(err_state) end --v1
+    -- main error path
     if not func then on_error(err_state) return end --v2 : has to return for case4 hits
     debugp(1, 'on_call: No errors loadstring, proceeding...')
     local l_end = GetTime()
@@ -259,10 +232,7 @@ local function on_call(src)
     if not namespaces[addon] then namespaces[addon] = {} end
     debugp(1, 'on_call: namespace created: ' .. addon .. ' - TBL: ' .. tstr(namespaces[addon]))
     -- execute vararg func with full context
-    -- v3: we capture return values now, opens up for on
-    -- the fly translation (max 2args for now.) e.g.:
-    -- < local x = ___Lua51([[ return 10 % 3 ]]); print(x) >)
-    local a1, a2 = runner(addon, namespaces[addon]) -- v3
+    local a1, a2 = runner(addon, namespaces[addon]) -- v3: capture return values now
     debugp(1, 'on_call: |cFFFFFFFFCODE executed!')
 
     local exec_end = GetTime()

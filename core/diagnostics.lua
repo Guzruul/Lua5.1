@@ -44,3 +44,5 @@ function core.DIAGNOSTICS(category)
 end
 
 SELFTEST()
+
+

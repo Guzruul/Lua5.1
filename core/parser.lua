@@ -221,9 +221,9 @@ local function parse_funcbody(s)
             end
         end
     end
-    local rparen_tok = expect(s, 'rparen')
+    expect(s, 'rparen')
     local body = parse_block(s, false)
-    local end_tok = expect(s, 'keyword', 'end')
+    expect(s, 'keyword', 'end')
     debugp(2, "[parser] parse_funcbody done")
     return params, body
 end
@@ -239,7 +239,7 @@ local function parse_var(s)
         if next.type == 'lbracket' then
             local bracket_tok = advance(s)
             local idx = parse_exp(s, 0)
-            local rbracket_tok = expect(s, 'rbracket')
+            expect(s, 'rbracket')
             node = { type = 'Var', base = node, indexer = { type = 'IndexExpr', index = idx, line = bracket_tok.line, col = bracket_tok.column }, line = bracket_tok.line, col = bracket_tok.column }
         elseif next.type == 'dot' then
             local dot_tok = advance(s)
@@ -311,13 +311,13 @@ local function parse_prefix(s)
             if first.type == 'lbracket' then
                 local bracket_tok = advance(s)
                 local key = parse_exp(s, 0)
-                local rbracket_tok = expect(s, 'rbracket')
-                local assign_tok = expect(s, 'op_assign')
+                expect(s, 'rbracket')
+                expect(s, 'op_assign')
                 local val = parse_exp(s, 0)
                 field = { type = 'Field', kind = 'key', key = key, value = val, line = bracket_tok.line, col = bracket_tok.column }
             elseif first.type == 'identifier' and peek(s, 1) and peek(s, 1).type == 'op_assign' then
                 local id_tok = advance(s)
-                local assign_tok = advance(s)
+                advance(s)
                 local val = parse_exp(s, 0)
                 field = { type = 'Field', kind = 'keyvalue', key = { type = 'Identifier', name = id_tok.value, line = id_tok.line, col = id_tok.column }, value = val, line = id_tok.line, col = id_tok.column }
             else
@@ -328,7 +328,7 @@ local function parse_prefix(s)
             accept(s, 'comma')
             accept(s, 'semicolon')
         end
-        local rbrace_tok = expect(s, 'rbrace')
+        expect(s, 'rbrace')
         return { type = 'TableConstructor', fields = fields, line = lbrace_tok.line, col = lbrace_tok.column }
     end
 
@@ -377,7 +377,7 @@ local function parse_infix(s, left, prec)
                 tinsert(args, parse_exp(s, 0))
             end
         end
-        local rparen_tok = expect(s, 'rparen')
+        expect(s, 'rparen')
         return { type = 'CallExpr', func = left, args = args, is_method = false, line = lparen_tok.line, col = lparen_tok.column }
     end
 
@@ -414,7 +414,7 @@ local function parse_infix(s, left, prec)
     if tok.type == 'lbracket' then
         local bracket_tok = advance(s)
         local index = parse_exp(s, 0)
-        local rbracket_tok = expect(s, 'rbracket')
+        expect(s, 'rbracket')
         return { type = 'Var', base = left, indexer = { type = 'IndexExpr', index = index, line = bracket_tok.line, col = bracket_tok.column }, line = bracket_tok.line, col = bracket_tok.column }
     end
 
@@ -461,18 +461,18 @@ local function parse_statement(s, can_break)
     local do_tok = accept(s, 'keyword', 'do')
     if do_tok then
         local block = parse_block(s, true)
-        local end_tok = expect(s, 'keyword', 'end')
+        expect(s, 'keyword', 'end')
         return { type = 'DoBlock', block = block, line = do_tok.line, col = do_tok.column }
     end
 
     local while_tok = accept(s, 'keyword', 'while')
     if while_tok then
         local cond = parse_exp(s, 0)
-        local do_tok2 = expect(s, 'keyword', 'do')
+        expect(s, 'keyword', 'do')
         s.loop_depth = s.loop_depth + 1
         local block = parse_block(s, true)
         s.loop_depth = s.loop_depth - 1
-        local end_tok = expect(s, 'keyword', 'end')
+        expect(s, 'keyword', 'end')
         return { type = 'WhileLoop', condition = cond, block = block, line = while_tok.line, col = while_tok.column }
     end
 
@@ -481,7 +481,7 @@ local function parse_statement(s, can_break)
         s.loop_depth = s.loop_depth + 1
         local block = parse_block(s, true)
         s.loop_depth = s.loop_depth - 1
-        local until_tok = expect(s, 'keyword', 'until')
+        expect(s, 'keyword', 'until')
         local cond = parse_exp(s, 0)
         return { type = 'RepeatLoop', block = block, condition = cond, line = repeat_tok.line, col = repeat_tok.column }
     end
@@ -490,14 +490,14 @@ local function parse_statement(s, can_break)
     if if_tok then
         local clauses = {}
         local cond = parse_exp(s, 0)
-        local then_tok = expect(s, 'keyword', 'then')
+        expect(s, 'keyword', 'then')
         local block = parse_block(s, can_break)
         tinsert(clauses, { condition = cond, block = block })
         while true do
             local elseif_tok = accept(s, 'keyword', 'elseif')
             if not elseif_tok then break end
             cond = parse_exp(s, 0)
-            local then_tok2 = expect(s, 'keyword', 'then')
+            expect(s, 'keyword', 'then')
             block = parse_block(s, can_break)
             tinsert(clauses, { condition = cond, block = block })
         end
@@ -505,7 +505,7 @@ local function parse_statement(s, can_break)
         if accept(s, 'keyword', 'else') then
             elseblock = parse_block(s, can_break)
         end
-        local end_tok = expect(s, 'keyword', 'end')
+        expect(s, 'keyword', 'end')
         return { type = 'IfStatement', clauses = clauses, elseblock = elseblock, line = if_tok.line, col = if_tok.column }
     end
 
@@ -514,16 +514,16 @@ local function parse_statement(s, can_break)
         local name = expect(s, 'identifier')
         if accept(s, 'op_assign') then
             local start = parse_exp(s, 0)
-            local comma_tok = expect(s, 'comma')
+            expect(s, 'comma')
             local stop = parse_exp(s, 0)
             local step
             local step_comma = accept(s, 'comma')
             if step_comma then step = parse_exp(s, 0) end
-            local do_tok2 = expect(s, 'keyword', 'do')
+            expect(s, 'keyword', 'do')
             s.loop_depth = s.loop_depth + 1
             local block = parse_block(s, true)
             s.loop_depth = s.loop_depth - 1
-            local end_tok = expect(s, 'keyword', 'end')
+            expect(s, 'keyword', 'end')
             return {
                 type = 'ForNumeric',
                 var = { type = 'Identifier', name = name.value, line = name.line, col = name.column },
@@ -539,18 +539,18 @@ local function parse_statement(s, can_break)
                 local id_tok = expect(s, 'identifier')
                 tinsert(vars, { type = 'Identifier', name = id_tok.value, line = id_tok.line, col = id_tok.column })
             end
-            local in_tok = expect(s, 'keyword', 'in')
+            expect(s, 'keyword', 'in')
             local iters = { parse_exp(s, 0) }
             while true do
                 local comma_tok = accept(s, 'comma')
                 if not comma_tok then break end
                 tinsert(iters, parse_exp(s, 0))
             end
-            local do_tok2 = expect(s, 'keyword', 'do')
+            expect(s, 'keyword', 'do')
             s.loop_depth = s.loop_depth + 1
             local block = parse_block(s, true)
             s.loop_depth = s.loop_depth - 1
-            local end_tok = expect(s, 'keyword', 'end')
+            expect(s, 'keyword', 'end')
             return { type = 'ForGeneric', vars = vars, iters = iters, block = block, line = for_tok.line, col = for_tok.column }
         end
     end
@@ -649,7 +649,7 @@ local function parse_statement(s, can_break)
             while accept(s, 'comma') do
                 tinsert(targets, parse_var(s))
             end
-            local assign_tok = expect(s, 'op_assign')
+            expect(s, 'op_assign')
             local values = { parse_exp(s, 0) }
             while accept(s, 'comma') do
                 tinsert(values, parse_exp(s, 0))
@@ -663,7 +663,7 @@ local function parse_statement(s, can_break)
     if tok.type == 'lparen' then
         local lparen_tok = advance(s)
         local expr = parse_exp(s, 0)
-        local rparen_tok = expect(s, 'rparen')
+        expect(s, 'rparen')
         local tok2 = peek(s)
         if tok2 and tok2.type == 'lparen' then
             local call_node = parse_infix(s, { type = 'Parens', expr = expr, line = lparen_tok.line, col = lparen_tok.column }, 0)

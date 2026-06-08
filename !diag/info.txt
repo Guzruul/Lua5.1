@@ -15,6 +15,7 @@ To load and run a given string, use the idiom
 - error messages: [string "code"]:line: message.
 - critical: error line numbers are relative to the string passed to loadstring,
   not the original source. transpiled code will need line mapping for meaningful errors.
+- pcall returns full source code up to error line in err_state
 - maximum safe string size: ~31 million lines of "a=1\n" (~124 mb) without large address aware (laa).
 - with laa patch applied, ~62 million lines (~248 mb) safe.
 - crash point: ~33m (no laa) / ~65m (laa) → hard crash in lmempool.cpp:362: "not enough memory resources".
@@ -33,3 +34,14 @@ debugstack()
 ---------------------------
 - debugstack(): available in 1.12.1. returns a multi-line string of the call stack. each line: "filepath:line: in function 'functionname'".
 - accepts optional start level and count parameters to control the range of stack frames returned.
+
+on_load()
+---------------------------
+-- main processing func, runs the whole pipeline
+    -- have to deal with 3 error types:
+    -- 1) before pipeline -> assert() is fine, since regular code
+    ----> regular lua errors on the libs file level, assert -> lib dev problem
+    -- 2) inside pipeline -> on_error() catches, loadstring obfuscates origin
+    ----> transpiler bugs that happen inside loadstring         -> lib dev problem
+    -- 3) after execution -> wow handles, @src_file prefix for attribution
+    ----> regular lua/wow errors after code translation   -> user problem
