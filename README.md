@@ -1,6 +1,6 @@
 # Lua5.1 for WoW Vanilla 1.12.1
 
-**`Lua5.1` is a stand-alone runtime mini-transpiler for World of Warcraft Vanilla 1.12.1 that tries to emulate `Lua5.1` and Blizzard's private table system introduced in Wotlk 3.0.**
+**`Lua5.1` is a mini-transpiler for World of Warcraft Vanilla 1.12.1 that tries to emulate `Lua5.1` and Blizzard's private table system introduced in Wotlk 3.0.**
 
 ## Features
 
@@ -227,11 +227,6 @@ Transpiler errors:
 - Load the `Lua5.1\core\_init.xml` file via your `.toc` or `.xml` entry point
 
 ## Last Note
-
-And if you enjoy the project and want to support me:
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/guzruul)
-
 - Help is always welcome
 
 Take care turtles, Guzruul.
