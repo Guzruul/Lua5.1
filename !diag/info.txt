@@ -1,0 +1,35 @@
+loadstring()
+
+lua manual functions:
+---------------------------
+loadstring (string [, chunkname])
+Loads a string as a Lua chunk (without running it). If there are no errors, returns the compiled chunk as a function; otherwise, returns nil plus the error message. The environment of the returned function is the global environment.
+The optional parameter chunkname is the name to be used in error messages and debug information.
+To load and run a given string, use the idiom
+    assert(loadstring(s))()
+---------------------------
+
+- works as per lua 5.0 manual.
+- returns function on success, nil + err on failure.
+- setfenv() works on the returned function.
+- error messages: [string "code"]:line: message.
+- critical: error line numbers are relative to the string passed to loadstring,
+  not the original source. transpiled code will need line mapping for meaningful errors.
+- maximum safe string size: ~31 million lines of "a=1\n" (~124 mb) without large address aware (laa).
+- with laa patch applied, ~62 million lines (~248 mb) safe.
+- crash point: ~33m (no laa) / ~65m (laa) → hard crash in lmempool.cpp:362: "not enough memory resources".
+- root cause: 32-bit process virtual memory ceiling (2 gb default, 4 gb with laa flag). not a loadstring limit; it's the c++ memory allocator exhausting the process address space.
+- chunkname parameter: works as per lua 5.0 manual. custom name appears in compile-time error messages (e.g., [string "chunkname"]:1: ...).
+- nested loadstring: functions created via loadstring can themselves call loadstring to compile more code. no restrictions.
+- arguments / vararg: lua 5.0 does not allow `...` directly in loadstring chunks (only inside functions defined with `...` parameter). workaround: use implicit `arg` table (arg[1], arg[2], ...) or wrap code in a function that receives `...`.
+- environment snapshot: loaded functions see the *live* global environment, not a snapshot at compile time. changes to _g after loadstring are visible to the function. polyfills can be added after compilation.
+- upvalue isolation: loadstring chunks have no access to local variables from the calling scope. they execute in the global environment (unless setfenv is applied). locals like `secret` are not visible; the chunk sees only globals.
+- compile-time vs runtime errors: compile errors are returned as nil + err by loadstring. runtime errors occur only when calling the returned function, captured via pcall. both include the chunk name and line number.
+- return values: loadstring functions can return multiple values (e.g., return 1,2,3 works).
+- global pollution: loaded functions execute in the global environment by default; they can add or modify global variables, which persist after execution.
+- garbage collection: compiled functions are properly freed when no longer referenced. memory returns to baseline after collectgarbage(), confirming no leaks from repeatedly creating/discarding loadstring functions.
+
+debugstack()
+---------------------------
+- debugstack(): available in 1.12.1. returns a multi-line string of the call stack. each line: "filepath:line: in function 'functionname'".
+- accepts optional start level and count parameters to control the range of stack frames returned.

@@ -1,8 +1,8 @@
 local core = ___Lua51reg'transpiler'
 
-if ( core.TPIL ) then return end
+if ( core.transpiler ) then return end
 
-local DEBG = DEBG
+local debugp = debugp
 local type = type
 local table = table
 local error = error
@@ -397,6 +397,9 @@ function render_expression(node, context)
         error('unsupported unary operator: ' .. tostring(node.op) .. ' at line ' .. tostring(node.line))
     elseif node.type == 'TableConstructor' then
         if getn(node.fields or {}) == 1 and node.fields[1].kind == 'value' and node.fields[1].value.type == 'VarArg' then
+            if not context.in_vararg then
+                error("'...' used outside a vararg function – cannot transpile at line " .. tostring(node.line))
+            end
             return 'arg'
         end
         local fields = {}
@@ -576,16 +579,8 @@ function render_statement(node, indent, context)
                 return 'return ' .. expand_select_multi(e)
             end
         end
-        for _, e in ipairs(node.exprs or {}) do -- TODO logos: both branches do same thing(?)... the if e.type == 'CallExpr' check should be useless i think...// dead code for the single‑select case but needed for other multi‑return functions. so we leave it ...
-            local expr_text
-            if e.type == 'CallExpr' then
-                -- for non‑select calls we still dont expand; call returns its natural multi‑ret
-                -- which lua handles correctly. so just render normally
-                expr_text = render_expression(e, context)
-            else
-                expr_text = render_expression(e, context)
-            end
-            tinsert(exprs, expr_text)
+        for _, e in ipairs(node.exprs or {}) do
+            tinsert(exprs, render_expression(e, context))
         end
         if getn(exprs) == 0 then
             return 'return'
@@ -613,8 +608,8 @@ function render_block(block, indent, context)
     return concat(lines, '\n')
 end
 
-function core.TPIL(ast)
-    DEBG(1, '=== TPIL START ===')
+function core.transpiler(ast)
+    debugp(1, '=== transpiler START ===')
     if not ast or type(ast) ~= 'table' or ast.type ~= 'Chunk' then
         error('expected AST Chunk node')
     end
@@ -643,7 +638,7 @@ function core.TPIL(ast)
         tinsert(helpers, 'local function __lua51_mod(a, b)\n  return a - math.floor(a / b) * b\nend')
     end
     if needs_match then
-        tinsert(helpers, 'local function __lua51_match(s, pattern, init)\n  local results = {string.find(s, pattern, init)}\n  if not results[1] then return nil end\n  if table.getn(results) > 2 then\n    return unpack(results, 3)\n  else\n    return string.sub(s, results[1], results[2])\n  end\nend')
+        tinsert(helpers, 'local function __lua51_match(s, pattern, init)\n  local _, e, c1, c2, c3 = string.find(s, pattern, init)\n  if not _ then return nil end\n  if c1 ~= nil then\n    return c1, c2, c3\n  else\n    return string.sub(s, _, e)\n  end\nend')
     end
     if needs_gmatch then
         tinsert(helpers, 'local function __lua51_gmatch(s, pattern)\n  local pos = 1\n  return function()\n    local _, e, c1, c2, c3, c4, c5 = string.find(s, pattern, pos)\n    if not _ then return nil end\n    pos = e + 1\n    if c1 ~= nil then\n      return c1, c2, c3, c4, c5\n    else\n      return string.sub(s, _, e)\n    end\n  end\nend')
@@ -652,8 +647,8 @@ function core.TPIL(ast)
         code = concat(helpers, '\n\n') .. '\n\n' .. code
     end
 
-    DEBG(1, '|cFFFFFFFFTranspile returning code: ' .. code)
-    DEBG(2, 'CODE:\n' .. code)
-    DEBG(1, '=== TPIL END ===')
+    debugp(1, '|cFFFFFFFFTranspile returning code: ' .. code)
+    debugp(2, 'CODE:\n' .. code)
+    debugp(1, '=== transpiler END ===')
     return code
 end

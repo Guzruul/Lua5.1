@@ -1,9 +1,6 @@
-# Lua5.1 - Service Framework for WoW Vanilla 1.12.1
+# Lua5.1 for WoW Vanilla 1.12.1
 
 **`Lua5.1` is a stand-alone runtime mini-transpiler and service layer for World of Warcraft Vanilla 1.12.1 that tries to emulate `Lua5.1` and Blizzard's private table system introduced in Wotlk 3.0.**
-
-- Fully written in Lua. No external tools needed.
-- AST transpiler - no cheap regex hack
 
 ## Features
 
@@ -132,7 +129,7 @@ Example:
     local a, b = core.complexFunc()
     print(a .. ', ' .. b)
 
-## New Command Line
+## Command Line
 
     /lua51 run print(10 % 3)
     /l51 run <some lua 5.1 code>
@@ -199,10 +196,6 @@ You either return values, or add them to a shared table if you want to use them 
 ## Performance
 Pretty good honestly.
 
-253 testcases passed.
-Has transpiled a full production file.
-Can be called inside 'OnUpdate' scripts without throttle.
-
 ## Error Messages
 
 `___Lua51()` reports errors with the exact line and column from your source code.
@@ -235,15 +228,10 @@ Transpiler errors:
 
 ## Last Note
 
-If you want to know why... I like compiler engineering and low level stuff.
-
-And if you enjoy the framework and want to support me:
+And if you enjoy the project and want to support me:
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/guzruul)
 
-- Please try not to fork this, instead push a PR please
 - Help is always welcome
 
 Take care turtles, Guzruul.
-
-... Aπό τι είναι φτιαγμένη η φαντασία...?

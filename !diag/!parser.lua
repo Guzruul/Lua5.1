@@ -1,8 +1,8 @@
 -- dont load these files, copy the tests over to diagnostic instead
 
 add_test('parser_1', function()
-    local tokens = core.TOKN('local x = 1')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = 1')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -11,8 +11,8 @@ add_test('parser_1', function()
 end)
 
 add_test('parser_2', function()
-    local tokens = core.TOKN('do end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('do end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -22,8 +22,8 @@ add_test('parser_2', function()
 end)
 
 add_test('parser_3', function()
-    local tokens = core.TOKN('local x')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -34,8 +34,8 @@ add_test('parser_3', function()
 end)
 
 add_test('parser_4', function()
-    local tokens = core.TOKN("local x = 'hello'")
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer("local x = 'hello'")
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -47,8 +47,8 @@ add_test('parser_4', function()
 end)
 
 add_test('parser_5', function()
-    local tokens = core.TOKN('x = 1')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('x = 1')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -59,8 +59,8 @@ add_test('parser_5', function()
 end)
 
 add_test('parser_6', function()
-    local tokens = core.TOKN('local a, b = 1, 2')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local a, b = 1, 2')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -71,8 +71,8 @@ add_test('parser_6', function()
 end)
 
 add_test('parser_7', function()
-    local tokens = core.TOKN('')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -80,8 +80,8 @@ add_test('parser_7', function()
 end)
 
 add_test('parser_8', function()
-    local tokens = core.TOKN('x = 1')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('x = 1')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -93,8 +93,8 @@ add_test('parser_8', function()
 end)
 
 add_test('parser_9', function()
-    local tokens = core.TOKN('foo()')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('foo()')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -106,8 +106,8 @@ add_test('parser_9', function()
 end)
 
 add_test('parser_10', function()
-    local tokens = core.TOKN('return 1')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('return 1')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body) == 1
        and ast.body[1].type == 'Block'
@@ -118,8 +118,8 @@ add_test('parser_10', function()
 end)
 
 add_test('parser_11', function()
-    local tokens = core.TOKN('return')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('return')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].ret ~= nil
        and ast.body[1].ret.type == 'Return'
@@ -127,8 +127,8 @@ add_test('parser_11', function()
 end)
 
 add_test('parser_12', function()
-    local tokens = core.TOKN('if true then end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('if true then end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'IfStatement'
        and tgetn(ast.body[1].stmts[1].clauses) == 1
@@ -136,8 +136,8 @@ add_test('parser_12', function()
 end)
 
 add_test('parser_13', function()
-    local tokens = core.TOKN('if true then else end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('if true then else end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'IfStatement'
        and tgetn(ast.body[1].stmts[1].clauses) == 1
@@ -146,8 +146,8 @@ add_test('parser_13', function()
 end)
 
 add_test('parser_14', function()
-    local tokens = core.TOKN('if true then elseif false then else end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('if true then elseif false then else end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'IfStatement'
        and tgetn(ast.body[1].stmts[1].clauses) == 2
@@ -155,8 +155,8 @@ add_test('parser_14', function()
 end)
 
 add_test('parser_15', function()
-    local tokens = core.TOKN('while true do end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('while true do end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'WhileLoop'
        and ast.body[1].stmts[1].condition ~= nil
@@ -165,8 +165,8 @@ add_test('parser_15', function()
 end)
 
 add_test('parser_16', function()
-    local tokens = core.TOKN('repeat until true')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('repeat until true')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'RepeatLoop'
        and ast.body[1].stmts[1].condition ~= nil
@@ -175,8 +175,8 @@ add_test('parser_16', function()
 end)
 
 add_test('parser_17', function()
-    local tokens = core.TOKN('for i = 1, 10 do end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('for i = 1, 10 do end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'ForNumeric'
        and ast.body[1].stmts[1].var.name == 'i'
@@ -187,16 +187,16 @@ add_test('parser_17', function()
 end)
 
 add_test('parser_18', function()
-    local tokens = core.TOKN('for i = 1, 10, 2 do end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('for i = 1, 10, 2 do end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'ForNumeric'
        and ast.body[1].stmts[1].step ~= nil
 end)
 
 add_test('parser_19', function()
-    local tokens = core.TOKN('for k, v in pairs(t) do end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('for k, v in pairs(t) do end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'ForGeneric'
        and tgetn(ast.body[1].stmts[1].vars) == 2
@@ -205,8 +205,8 @@ add_test('parser_19', function()
 end)
 
 add_test('parser_20', function()
-    local tokens = core.TOKN('function foo() end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('function foo() end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionDecl'
        and ast.body[1].stmts[1].is_local == false
@@ -217,8 +217,8 @@ add_test('parser_20', function()
 end)
 
 add_test('parser_21', function()
-    local tokens = core.TOKN('local function foo() end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local function foo() end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionDecl'
        and ast.body[1].stmts[1].is_local == true
@@ -226,8 +226,8 @@ add_test('parser_21', function()
 end)
 
 add_test('parser_22', function()
-    local tokens = core.TOKN('local x = 1 + 2')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = 1 + 2')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'BinaryOp'
@@ -235,8 +235,8 @@ add_test('parser_22', function()
 end)
 
 add_test('parser_23', function()
-    local tokens = core.TOKN('local x = -1')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = -1')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'UnaryOp'
@@ -244,8 +244,8 @@ add_test('parser_23', function()
 end)
 
 add_test('parser_24', function()
-    local tokens = core.TOKN('local t = {}')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local t = {}')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'TableConstructor'
@@ -253,8 +253,8 @@ add_test('parser_24', function()
 end)
 
 add_test('parser_25', function()
-    local tokens = core.TOKN('while true do break end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('while true do break end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'WhileLoop'
        and ast.body[1].stmts[1].block.ret ~= nil
@@ -263,8 +263,8 @@ add_test('parser_25', function()
 end)
 
 add_test('parser_26', function()
-    local tokens = core.TOKN('a, b = 1, 2')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('a, b = 1, 2')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'Assignment'
        and tgetn(ast.body[1].stmts[1].targets) == 2
@@ -272,8 +272,8 @@ add_test('parser_26', function()
 end)
 
 add_test('parser_27', function()
-    local tokens = core.TOKN('local x = nil')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = nil')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'Literal'
@@ -282,8 +282,8 @@ add_test('parser_27', function()
 end)
 
 add_test('parser_28', function()
-    local tokens = core.TOKN('local x = true')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = true')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'Literal'
@@ -291,8 +291,8 @@ add_test('parser_28', function()
 end)
 
 add_test('parser_29', function()
-    local tokens = core.TOKN('local x = false')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = false')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'Literal'
@@ -300,16 +300,16 @@ add_test('parser_29', function()
 end)
 
 add_test('parser_30', function()
-    local tokens = core.TOKN('return 1, 2, 3')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('return 1, 2, 3')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].ret.type == 'Return'
        and tgetn(ast.body[1].ret.exprs) == 3
 end)
 
 add_test('parser_31', function()
-    local tokens = core.TOKN('local x = 1 local y = 2')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = 1 local y = 2')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body[1].stmts) == 2
        and ast.body[1].stmts[1].type == 'LocalDecl'
@@ -317,8 +317,8 @@ add_test('parser_31', function()
 end)
 
 add_test('parser_32', function()
-    local tokens = core.TOKN('if true then return end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('if true then return end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'IfStatement'
        and ast.body[1].stmts[1].clauses[1].block.ret.type == 'Return'
@@ -326,8 +326,8 @@ add_test('parser_32', function()
 end)
 
 add_test('parser_33', function()
-    local tokens = core.TOKN('function foo(x, y) end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('function foo(x, y) end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionDecl'
        and tgetn(ast.body[1].stmts[1].params.names) == 2
@@ -335,8 +335,8 @@ add_test('parser_33', function()
 end)
 
 add_test('parser_34', function()
-    local tokens = core.TOKN('local t = {1, 2, 3}')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local t = {1, 2, 3}')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'TableConstructor'
@@ -344,8 +344,8 @@ add_test('parser_34', function()
 end)
 
 add_test('parser_35', function()
-    local tokens = core.TOKN('local x = not true')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = not true')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'UnaryOp'
@@ -353,8 +353,8 @@ add_test('parser_35', function()
 end)
 
 add_test('parser_36', function()
-    local tokens = core.TOKN("local x = #'hello'")
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer("local x = #'hello'")
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'UnaryOp'
@@ -362,8 +362,8 @@ add_test('parser_36', function()
 end)
 
 add_test('parser_37', function()
-    local tokens = core.TOKN('obj:method(1)')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('obj:method(1)')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionCall'
        and ast.body[1].stmts[1].call.is_method == true
@@ -371,8 +371,8 @@ add_test('parser_37', function()
 end)
 
 add_test('parser_38', function()
-    local tokens = core.TOKN('local x = a.b.c')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = a.b.c')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'Var'
@@ -382,8 +382,8 @@ add_test('parser_38', function()
 end)
 
 add_test('parser_39', function()
-    local tokens = core.TOKN('foo(1, 2)')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('foo(1, 2)')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionCall'
        and ast.body[1].stmts[1].call.type == 'CallExpr'
@@ -391,16 +391,16 @@ add_test('parser_39', function()
 end)
 
 add_test('parser_40', function()
-    local tokens = core.TOKN('local f = function() end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local f = function() end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'LocalDecl'
        and ast.body[1].stmts[1].values[1].type == 'FunctionExpression'
 end)
 
 add_test('parser_41', function()
-    local tokens = core.TOKN("foo 'hello'")
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer("foo 'hello'")
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionCall'
        and tgetn(ast.body[1].stmts[1].call.args) == 1
@@ -408,8 +408,8 @@ add_test('parser_41', function()
 end)
 
 add_test('parser_42', function()
-    local tokens = core.TOKN('foo{1, 2}')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('foo{1, 2}')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionCall'
        and tgetn(ast.body[1].stmts[1].call.args) == 1
@@ -417,8 +417,8 @@ add_test('parser_42', function()
 end)
 
 add_test('parser_43', function()
-    local tokens = core.TOKN('function a.b.c() end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('function a.b.c() end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionDecl'
        and ast.body[1].stmts[1].name.type == 'Var'
@@ -428,8 +428,8 @@ add_test('parser_43', function()
 end)
 
 add_test('parser_44', function()
-    local tokens = core.TOKN('local x = 2 ^ 3 ^ 4')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = 2 ^ 3 ^ 4')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'BinaryOp'
        and ast.body[1].stmts[1].values[1].op == 'op_pow'
@@ -439,8 +439,8 @@ add_test('parser_44', function()
 end)
 
 add_test('parser_45', function()
-    local tokens = core.TOKN('local t = {x = 1, [1] = 2}')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local t = {x = 1, [1] = 2}')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'TableConstructor'
        and tgetn(ast.body[1].stmts[1].values[1].fields) == 2
@@ -449,8 +449,8 @@ add_test('parser_45', function()
 end)
 
 add_test('parser_46', function()
-    local tokens = core.TOKN('function foo(...) end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('function foo(...) end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionDecl'
        and ast.body[1].stmts[1].params.has_vararg == true
@@ -458,8 +458,8 @@ add_test('parser_46', function()
 end)
 
 add_test('parser_47', function()
-    local tokens = core.TOKN('x = 1; y = 2')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('x = 1; y = 2')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and tgetn(ast.body[1].stmts) == 2
        and ast.body[1].stmts[1].type == 'Assignment'
@@ -467,8 +467,8 @@ add_test('parser_47', function()
 end)
 
 add_test('parser_48', function()
-    local tokens = core.TOKN("local x = 'a' .. 'b' .. 'c'")
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer("local x = 'a' .. 'b' .. 'c'")
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'BinaryOp'
        and ast.body[1].stmts[1].values[1].op == 'concat'
@@ -478,8 +478,8 @@ add_test('parser_48', function()
 end)
 
 add_test('parser_49', function()
-    local tokens = core.TOKN('local x = a[b][c]')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = a[b][c]')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'Var'
        and ast.body[1].stmts[1].values[1].base.type == 'Var'
@@ -488,8 +488,8 @@ add_test('parser_49', function()
 end)
 
 add_test('parser_50', function()
-    local tokens = core.TOKN('local x = a.b[c]')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = a.b[c]')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'Var'
        and ast.body[1].stmts[1].values[1].base.base.base.name == 'a'
@@ -498,8 +498,8 @@ add_test('parser_50', function()
 end)
 
 add_test('parser_51', function()
-    local tokens = core.TOKN('local x = foo()()')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = foo()()')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'CallExpr'
        and ast.body[1].stmts[1].values[1].func.type == 'CallExpr'
@@ -509,8 +509,8 @@ add_test('parser_51', function()
 end)
 
 add_test('parser_52', function()
-    local tokens = core.TOKN('local x = a:b().c')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = a:b().c')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'Var'
        and ast.body[1].stmts[1].values[1].base.type == 'CallExpr'
@@ -520,8 +520,8 @@ add_test('parser_52', function()
 end)
 
 add_test('parser_53', function()
-    local tokens = core.TOKN('if a == b then end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('if a == b then end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'IfStatement'
        and ast.body[1].stmts[1].clauses[1].condition.type == 'BinaryOp'
@@ -529,24 +529,24 @@ add_test('parser_53', function()
 end)
 
 add_test('parser_54', function()
-    local tokens = core.TOKN('local x = a or b')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = a or b')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'BinaryOp'
        and ast.body[1].stmts[1].values[1].op == 'or'
 end)
 
 add_test('parser_55', function()
-    local tokens = core.TOKN('local x = a and b')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('local x = a and b')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].values[1].type == 'BinaryOp'
        and ast.body[1].stmts[1].values[1].op == 'and'
 end)
 
 add_test('parser_56', function()
-    local tokens = core.TOKN('if not x then end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('if not x then end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'IfStatement'
        and ast.body[1].stmts[1].clauses[1].condition.type == 'UnaryOp'
@@ -554,8 +554,8 @@ add_test('parser_56', function()
 end)
 
 add_test('parser_57', function()
-    local tokens = core.TOKN('function foo() return 1, 2 end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('function foo() return 1, 2 end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'FunctionDecl'
        and ast.body[1].stmts[1].body.ret.type == 'Return'
@@ -563,8 +563,8 @@ add_test('parser_57', function()
 end)
 
 add_test('parser_58', function()
-    local tokens = core.TOKN('while true do return 1 end')
-    local ast = core.PARS(tokens)
+    local tokens = core.tokenizer('while true do return 1 end')
+    local ast = core.parser(tokens)
     return ast.type == 'Chunk'
        and ast.body[1].stmts[1].type == 'WhileLoop'
        and ast.body[1].stmts[1].block.ret.type == 'Return'
