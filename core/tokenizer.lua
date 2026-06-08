@@ -276,8 +276,9 @@ local function scan_short_string(input, tokens)
                 -- \<newline>: consumes newline, inserts newline char
                 input_next(input)  -- consume newline (input_next handles CRLF)
             else
-                -- Lua 5.1 valid escapes: \a \b \f \n \r \t \v \\ \" \' \[ \]
-                if next_c == byte.BELL or next_c == byte.BKSP or next_c == byte.FORMFEED or next_c == byte.NEWLINE or next_c == byte.CARRIAGE or next_c == byte.TAB or next_c == byte.VTAB or next_c == byte.BACKSLASH or next_c == byte.DQUOTE or next_c == byte.SQUOTE or next_c == byte.LBRACKET or next_c == byte.RBRACKET then
+                -- Lua 5.1 valid escapes: \a \b \f \ng \r \t \v \\ \" \' \[ \]
+                -- next_c is the SOURCE character after backslash (e.g. 'n' for \n)
+                if next_c == byte.A_LOWER or next_c == 98 or next_c == 102 or next_c == 110 or next_c == 114 or next_c == 116 or next_c == 118 or next_c == byte.BACKSLASH or next_c == byte.DQUOTE or next_c == byte.SQUOTE or next_c == byte.LBRACKET or next_c == byte.RBRACKET then
                     input_next(input)
                 else
                     error("tokenizer:  error at line " .. input.line .. " col " .. input.col .. ": invalid escape '\\" .. strchar(next_c) .. "' in Lua 5.1")

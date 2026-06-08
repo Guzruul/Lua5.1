@@ -50,7 +50,7 @@ end)
 
 add_test('tokenizer_9', function()
     local tokens = core.tokenizer('[[hello]]')
-    return tgetn(tokens) == 1 and tokens[1].type == 'string'
+    return tgetn(tokens) == 1 and tokens[1].type == 'string_long'
 end)
 
 add_test('tokenizer_10', function()
@@ -165,7 +165,7 @@ end)
 
 add_test('tokenizer_32', function()
     local tokens = core.tokenizer('[==[hello]==]')
-    return tgetn(tokens) == 1 and tokens[1].type == 'string'
+    return tgetn(tokens) == 1 and tokens[1].type == 'string_long'
 end)
 
 add_test('tokenizer_33', function()
@@ -193,7 +193,7 @@ end)
 
 add_test('tokenizer_37', function()
     local tokens = core.tokenizer('[[line1\nline2]]')
-    return tgetn(tokens) == 1 and tokens[1].type == 'string'
+    return tgetn(tokens) == 1 and tokens[1].type == 'string_long'
 end)
 
 add_test('tokenizer_38', function()
@@ -343,7 +343,7 @@ end)
 
 add_test('tokenizer_60', function()
     local tokens = core.tokenizer('[[]]')
-    return tgetn(tokens) == 1 and tokens[1].type == 'string'
+    return tgetn(tokens) == 1 and tokens[1].type == 'string_long'
 end)
 
 add_test('tokenizer_61', function()
@@ -361,7 +361,7 @@ end)
 add_test('tokenizer_63', function()
     local tokens = core.tokenizer('[[a\nb\nc]]\nafter')
     return tgetn(tokens) == 2
-        and tokens[1].type == 'string'
+        and tokens[1].type == 'string_long'
         and tokens[2].type == 'identifier'
         and tokens[2].line == 4
 end)
